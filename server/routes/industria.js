@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
       const st = (statusRows && statusRows[0]) ? statusRows[0] : {};
 
       const hoje = new Date();
-      const limiteMoendaA = new Date('2026-09-26T00:00:00-03:00');
+      const limiteMoendaA = new Date('2026-09-25T00:00:00-03:00');
       const isMoendaAParadaEntreSafra = hoje < limiteMoendaA;
 
       return res.json({
