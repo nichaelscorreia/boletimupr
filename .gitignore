@@ -1,0 +1,7 @@
+node_modules/
+.env
+.DS_Store
+.idea/
+# Contém senha do Oracle e o segredo da API
+tomcat-api/deploy/
+tomcat-api/target/

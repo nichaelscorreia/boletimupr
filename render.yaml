@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: boletim-online-moagem
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: ORACLE_SAFRA
+        value: "54"
+      - key: BOLETIM_API_URL
+        value: http://nstech.ddns.net:8086/boletim-api
+      - key: BOLETIM_API_SECRET
+        sync: false # informe no painel do Render (não versionar)

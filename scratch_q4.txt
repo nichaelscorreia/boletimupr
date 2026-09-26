@@ -1,0 +1,1071 @@
+            rset = stmt.executeQuery("SELECT '0' tipo, '1' tipo2, ' Hoje' periodo, to_char(trunc(sysdate),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 0 horini, 23 horfin, \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     " \n" +
+                                     "union all \n" +
+                                     " \n" +
+                                     "SELECT '0' tipo, '1' tipo2, 'Estimativa' periodo, to_char(trunc(sysdate),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 0 horini, 23 horfin, \n" +
+                                     "       trunc((sum(iec.pesoliquido)/((to_number(to_char(sysdate,'HH24'))*60) + to_number(to_char(sysdate,'MI')))) * 1440) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     " \n" +
+                                     "union all \n" +
+                                     " \n" +
+                                     "SELECT '0' tipo, '2' tipo2, ' Ontem' periodo, to_char(trunc(sysdate)-1,'dd/mm/rrrr') datini, to_char(trunc(sysdate)-1,'dd/mm/rrrr') datfin, 0 horini, 23 horfin, \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)-1  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     " \n" +
+                                     "union all \n" +
+                                     " \n" +
+                                     "SELECT '0' tipo, '3' tipo2, ' Semana' periodo, to_char(trunc(sysdate) - decode(to_char(sysdate,'d'),1,6,2,0,3,1,4,2,5,3,6,4,7,5),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 0 horini, 23 horfin, \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento between trunc(sysdate) - decode(to_char(sysdate,'d'),1,6,2,0,3,1,4,2,5,3,6,4,7,5) and trunc(sysdate)  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     " \n" +
+                                     "union all \n" +
+                                     " \n" +
+                                     "SELECT '0' tipo, '3' tipo2, ' Sem.Ant' periodo,  \n" +
+                                     "           to_char(trunc(sysdate) - decode(to_char(sysdate,'d'),1,13,2,7,3,8,4,9,5,10,6,11,7,12),'dd/mm/rrrr') datini, \n" +
+                                     "           to_char(trunc(sysdate) - decode(to_char(sysdate,'d'),1,7,2,1,3,2,4,3,5,4,6,5,7,6),'dd/mm/rrrr') datfin, 0 horini, 23 horfin, \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento between to_date(trunc(sysdate) - decode(to_char(sysdate,'d'),1,13,2,7,3,8,4,9,5,10,6,11,7,12),'dd/mm/rrrr') and \n" +
+                                     "                               to_date(trunc(sysdate) - decode(to_char(sysdate,'d'),1,7,2,1,3,2,4,3,5,4,6,5,7,6),'dd/mm/rrrr')  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     " \n" +
+                                     "union all \n" +
+                                     " \n" +
+                                     "select '0' tipo, '4' tipo2, ' Safra' periodo, to_char(min(s.data_inicio),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 0 horini, 23 horfin, \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     " \n" +
+                                     "union all \n" +
+                                     " \n" +
+                                     "select '0' tipo, '5' tipo2, ' M�dia/Dia' periodo, min(datini) datini, min(datfin) datfin, 0 horini, 23 horfin, \n" +
+                                     "       avg(pesliq) pesliq, 0 pcc, 0 atr, 0 ar, 0 pureza, 0 fibra, '' tq, 0 impmin, 0 impveg \n" +
+                                     "from (select ec.datamovimento, to_char(min(s.data_inicio),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, \n" +
+                                     "             sum(iec.pesoliquido) pesliq \n" +
+                                     "      FROM agricola.entradacana ec, \n" +
+                                     "           agricola.itensentradacana iec, \n" +
+                                     "           agricola.analise_pcts a_pcts, \n" +
+                                     "           agricola.safra s, \n" +
+                                     "           agricola.ordem_corte_unica oc, \n" +
+                                     "           agricola.tipocana tc \n" +
+                                     "      WHERE s.cod_grupoempresa = 1 \n" +
+                                     "      AND   s.cod_empresa = 20 \n" +
+                                     "      AND   s.cod_filial = 1 \n" +
+                                     "      AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "      AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "      AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "      AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "      AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "      AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "      AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "      AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "      AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "      AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "      AND   iec.pesoliquido > 0 \n" +
+                                     "      AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "      AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "      AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "      AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "      AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "      AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "      AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "      AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "      AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "      AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "      AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "      and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "      group by ec.datamovimento) \n" +
+                                     " \n" +
+                                     "union all \n" +
+                                     " \n" +
+                                     "SELECT to_char(hf.cod_tipofazenda) tipo, '1 - ' || tf.descricao tipo2, ' Hoje' periodo, to_char(trunc(sysdate),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 0 horini, 23 horfin,  \n" +
+                                     "       sum(iec.pesoliquido) pesliq,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0,  \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec,  \n" +
+                                     "     agricola.itensentradacana iec,  \n" +
+                                     "     agricola.analise_pcts a_pcts,  \n" +
+                                     "     agricola.safra s,  \n" +
+                                     "     agricola.ordem_corte_unica oc,  \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c, \n" +
+                                     "     agricola.historico_fazenda hf, \n" +
+                                     "     agricola.tipofazenda tf \n" +
+                                     "WHERE s.cod_grupoempresa = 1  \n" +
+                                     "AND   s.cod_empresa = 20  \n" +
+                                     "AND   s.cod_filial = 1  \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa  \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa  \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial  \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra  \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)   \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa  \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa  \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial  \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra  \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana  \n" +
+                                     "AND   iec.pesoliquido > 0  \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa  \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa  \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial  \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra  \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana  \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana  \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa     \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa     \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial  \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra     \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte  \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana  \n" +
+                                     "and   hf.cod_grupoempresa = iec.cod_grupoempresa \n" +
+                                     "and   hf.cod_empresa      = iec.cod_empresa \n" +
+                                     "and   hf.cod_filial       = iec.cod_filial \n" +
+                                     "and   hf.cod_fazenda      = iec.cod_fazenda \n" +
+                                     "and   ec.datamovimento between hf.data_inicio and nvl(hf.data_fim, trunc(sysdate)) \n" +
+                                     "and   hf.cod_tipofazenda  = tf.cod_tipofazenda \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "group by hf.cod_tipofazenda, tf.descricao \n" +
+                                     " \n" +
+                                     "union all  \n" +
+                                     "  \n" +
+                                     "SELECT to_char(hf.cod_tipofazenda), '2 - ' || tf.descricao tipo2, ' Ontem' periodo, to_char(trunc(sysdate)-1,'dd/mm/rrrr') datini, to_char(trunc(sysdate)-1,'dd/mm/rrrr') datfin, 0 horini, 23 horfin,  \n" +
+                                     "       sum(iec.pesoliquido) pesliq,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0,  \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec,  \n" +
+                                     "     agricola.itensentradacana iec,  \n" +
+                                     "     agricola.analise_pcts a_pcts,  \n" +
+                                     "     agricola.safra s,  \n" +
+                                     "     agricola.ordem_corte_unica oc,  \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c, \n" +
+                                     "     agricola.historico_fazenda hf, \n" +
+                                     "     agricola.tipofazenda tf \n" +
+                                     "WHERE s.cod_grupoempresa = 1  \n" +
+                                     "AND   s.cod_empresa = 20  \n" +
+                                     "AND   s.cod_filial = 1  \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa  \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa  \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial  \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra  \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)-1   \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa  \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa  \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial  \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra  \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana  \n" +
+                                     "AND   iec.pesoliquido > 0  \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa  \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa  \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial  \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra  \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana  \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana  \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa     \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa     \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial  \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra     \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte  \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana  \n" +
+                                     "and   hf.cod_grupoempresa = iec.cod_grupoempresa \n" +
+                                     "and   hf.cod_empresa      = iec.cod_empresa \n" +
+                                     "and   hf.cod_filial       = iec.cod_filial \n" +
+                                     "and   hf.cod_fazenda      = iec.cod_fazenda \n" +
+                                     "and   ec.datamovimento between hf.data_inicio and nvl(hf.data_fim, trunc(sysdate)) \n" +
+                                     "and   hf.cod_tipofazenda  = tf.cod_tipofazenda \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "group by hf.cod_tipofazenda, tf.descricao \n" +
+                                     "  \n" +
+                                     "union all  \n" +
+                                     "  \n" +
+                                     "SELECT to_char(hf.cod_tipofazenda) tipo, '3 - ' || tf.descricao tipo2, ' Semana' periodo, to_char(trunc(sysdate) - decode(to_char(sysdate,'d'),1,6,2,0,3,1,4,2,5,3,6,4,7,5),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 0 horini, 23 horfin,  \n" +
+                                     "       sum(iec.pesoliquido) pesliq,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0,  \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec,  \n" +
+                                     "     agricola.itensentradacana iec,  \n" +
+                                     "     agricola.analise_pcts a_pcts,  \n" +
+                                     "     agricola.safra s,  \n" +
+                                     "     agricola.ordem_corte_unica oc,  \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c, \n" +
+                                     "     agricola.historico_fazenda hf, \n" +
+                                     "     agricola.tipofazenda tf \n" +
+                                     "WHERE s.cod_grupoempresa = 1  \n" +
+                                     "AND   s.cod_empresa = 20  \n" +
+                                     "AND   s.cod_filial = 1  \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa  \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa  \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial  \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra  \n" +
+                                     "AND   ec.datamovimento between  trunc(sysdate) - decode(to_char(sysdate,'d'),1,6,2,0,3,1,4,2,5,3,6,4,7,5) and trunc(sysdate)   \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa  \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa  \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial  \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra  \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana  \n" +
+                                     "AND   iec.pesoliquido > 0  \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa  \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa  \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial  \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra  \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana  \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana  \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa     \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa     \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial  \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra     \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte  \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana  \n" +
+                                     "and   hf.cod_grupoempresa = iec.cod_grupoempresa \n" +
+                                     "and   hf.cod_empresa      = iec.cod_empresa \n" +
+                                     "and   hf.cod_filial       = iec.cod_filial \n" +
+                                     "and   hf.cod_fazenda      = iec.cod_fazenda \n" +
+                                     "and   ec.datamovimento between hf.data_inicio and nvl(hf.data_fim, trunc(sysdate)) \n" +
+                                     "and   hf.cod_tipofazenda  = tf.cod_tipofazenda \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "group by hf.cod_tipofazenda, tf.descricao \n" +
+                                     "  \n" +
+                                     "union all  \n" +
+                                     "  \n" +
+                                     "SELECT to_char(hf.cod_tipofazenda) tipo, '3 - ' || tf.descricao tipo2, ' Sem.Ant' periodo,   \n" +
+                                     "           to_char(trunc(sysdate) - decode(to_char(sysdate,'d'),1,13,2,7,3,8,4,9,5,10,6,11,7,12),'dd/mm/rrrr') datini,  \n" +
+                                     "           to_char(trunc(sysdate) - decode(to_char(sysdate,'d'),1,7,2,1,3,2,4,3,5,4,6,5,7,6),'dd/mm/rrrr') datfin, 0 horini, 23 horfin,  \n" +
+                                     "       sum(iec.pesoliquido) pesliq,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0,  \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec,  \n" +
+                                     "     agricola.itensentradacana iec,  \n" +
+                                     "     agricola.analise_pcts a_pcts,  \n" +
+                                     "     agricola.safra s,  \n" +
+                                     "     agricola.ordem_corte_unica oc,  \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c, \n" +
+                                     "     agricola.historico_fazenda hf, \n" +
+                                     "     agricola.tipofazenda tf \n" +
+                                     "WHERE s.cod_grupoempresa = 1  \n" +
+                                     "AND   s.cod_empresa = 20  \n" +
+                                     "AND   s.cod_filial = 1  \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa  \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa  \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial  \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra  \n" +
+                                     "AND   ec.datamovimento between to_date(trunc(sysdate) - decode(to_char(sysdate,'d'),1,13,2,7,3,8,4,9,5,10,6,11,7,12),'dd/mm/rrrr') and  \n" +
+                                     "                               to_date(trunc(sysdate) - decode(to_char(sysdate,'d'),1,7,2,1,3,2,4,3,5,4,6,5,7,6),'dd/mm/rrrr')   \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa  \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa  \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial  \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra  \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana  \n" +
+                                     "AND   iec.pesoliquido > 0  \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa  \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa  \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial  \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra  \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana  \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana  \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa     \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa     \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial  \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra     \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte  \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana  \n" +
+                                     "and   hf.cod_grupoempresa = iec.cod_grupoempresa \n" +
+                                     "and   hf.cod_empresa      = iec.cod_empresa \n" +
+                                     "and   hf.cod_filial       = iec.cod_filial \n" +
+                                     "and   hf.cod_fazenda      = iec.cod_fazenda \n" +
+                                     "and   ec.datamovimento between hf.data_inicio and nvl(hf.data_fim, trunc(sysdate)) \n" +
+                                     "and   hf.cod_tipofazenda  = tf.cod_tipofazenda \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "group by hf.cod_tipofazenda, tf.descricao \n" +
+                                     "  \n" +
+                                     "union all  \n" +
+                                     "  \n" +
+                                     "select to_char(hf.cod_tipofazenda) tipo, '4 - ' || tf.descricao tipo2, ' Safra' periodo, to_char(min(s.data_inicio),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 0 horini, 23 horfin,  \n" +
+                                     "       sum(iec.pesoliquido) pesliq,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza,  \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0,  \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec,  \n" +
+                                     "     agricola.itensentradacana iec,  \n" +
+                                     "     agricola.analise_pcts a_pcts,  \n" +
+                                     "     agricola.safra s,  \n" +
+                                     "     agricola.ordem_corte_unica oc,  \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c, \n" +
+                                     "     agricola.historico_fazenda hf, \n" +
+                                     "     agricola.tipofazenda tf \n" +
+                                     "WHERE s.cod_grupoempresa = 1  \n" +
+                                     "AND   s.cod_empresa = 20  \n" +
+                                     "AND   s.cod_filial = 1  \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa  \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa  \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial  \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa  \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa  \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial  \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra  \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana  \n" +
+                                     "AND   iec.pesoliquido > 0  \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa  \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa  \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial  \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra  \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana  \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana  \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa     \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa     \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial  \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra     \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte  \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana  \n" +
+                                     "and   hf.cod_grupoempresa = iec.cod_grupoempresa \n" +
+                                     "and   hf.cod_empresa      = iec.cod_empresa \n" +
+                                     "and   hf.cod_filial       = iec.cod_filial \n" +
+                                     "and   hf.cod_fazenda      = iec.cod_fazenda \n" +
+                                     "and   ec.datamovimento between hf.data_inicio and nvl(hf.data_fim, trunc(sysdate)) \n" +
+                                     "and   hf.cod_tipofazenda  = tf.cod_tipofazenda \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "group by hf.cod_tipofazenda, tf.descricao \n" +
+                                     " \n" +
+                                     "union all \n" +
+                                     " \n" +
+                                     "select '5' tipo, '6' tipo2, '00-06h' periodo, to_char(trunc(sysdate),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 0 horini, 5 horfin, \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "and   to_number(substr(ec.horasaida,1,2)) between 0 and 5   \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     " \n" +
+                                     "union all \n" +
+                                     " \n" +
+                                     "select '5' tipo, '7' tipo2, '06-12h' periodo, to_char(trunc(sysdate),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 6 horini, 11 horfin, \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "and   to_number(substr(ec.horasaida,1,2)) between 6 and 11   \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     " \n" +
+                                     "union all  \n" +
+                                     "  \n" +
+                                     "select '5' tipo, '8' tipo2, '12-18h' periodo, to_char(trunc(sysdate),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 12 horini, 17 horfin, \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "and   to_number(substr(ec.horasaida,1,2)) between 12 and 17 \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "  \n" +
+                                     "union all  \n" +
+                                     "  \n" +
+                                     "select '5' tipo, '9' tipo2, '18-24h' periodo, to_char(trunc(sysdate),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin, 18 horini, 23 horfin, \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "and   to_number(substr(ec.horasaida,1,2)) between 18 and 23 \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "  \n" +
+                                     "union all  \n" +
+                                     "  \n" +
+                                     "select '9' tipo, '1' tipo2, to_char(to_number(substr(ec.horasaida,1,2)),'00')||' a '||  \n" +
+                                     "                            to_char(to_number(substr(ec.horasaida,1,2)) + 1,'00') periodo,  \n" +
+                                     "       to_char(trunc(sysdate),'dd/mm/rrrr') datini, to_char(trunc(sysdate),'dd/mm/rrrr') datfin,  \n" +
+                                     "       to_number(substr(ec.horasaida,1,2)) horini, to_number(substr(ec.horasaida,1,2)) horfin,  \n" +
+                                     "       sum(iec.pesoliquido) pesliq, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.POL_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) PCC, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.ATR * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) ATR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.AR_CANA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) AR, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.PUREZA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) pureza, \n" +
+                                     "       round(DECODE(SUM(A_PCTS.PESOLIQUIDO),0,0,SUM(A_PCTS.FIBRA * A_PCTS.PESOLIQUIDO )/SUM(A_PCTS.PESOLIQUIDO) ),4) FIBRA, \n" +                
+                                     "       trim(to_char(round(DECODE(SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0)),0,0, \n" +
+                                     "                    SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq, \n" +
+                                     "       round(DECODE(SUM(b.PESOLIQUIDO),0,0,SUM(b.impureza * 10 * b.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impmin, \n" +
+                                     "       round(DECODE(SUM(c.PESOLIQUIDO),0,0,SUM(c.impureza * 10 * c.PESOLIQUIDO )/SUM(b.PESOLIQUIDO) ),2) impveg \n" +
+                                     "FROM agricola.entradacana ec, \n" +
+                                     "     agricola.itensentradacana iec, \n" +
+                                     "     agricola.analise_pcts a_pcts, \n" +
+                                     "     agricola.safra s, \n" +
+                                     "     agricola.ordem_corte_unica oc, \n" +
+                                     "     agricola.tipocana tc, \n" +
+                                     "     agricola.analise_imp_mineral b, \n" +
+                                     "     agricola.analise_imp_vegetal c \n" +
+                                     "WHERE s.cod_grupoempresa = 1 \n" +
+                                     "AND   s.cod_empresa = 20 \n" +
+                                     "AND   s.cod_filial = 1 \n" +
+                                     "AND   s.cod_safra = " + sCodSafra + " \n" +
+                                     "AND   ec.cod_grupoempresa = s.cod_grupoempresa \n" +
+                                     "AND   ec.cod_empresa = s.cod_empresa \n" +
+                                     "AND   ec.cod_filial = s.cod_Filial \n" +
+                                     "AND   ec.cod_safra = s.cod_Safra \n" +
+                                     "AND   ec.datamovimento = trunc(sysdate)  \n" +
+                                     "AND   iec.cod_grupoempresa = ec.cod_grupoempresa \n" +
+                                     "AND   iec.cod_empresa = ec.cod_empresa \n" +
+                                     "AND   iec.cod_filial = ec.cod_filial \n" +
+                                     "AND   iec.cod_safra = ec.cod_safra \n" +
+                                     "AND   iec.cod_entradacana = ec.cod_entradacana \n" +
+                                     "AND   iec.pesoliquido > 0 \n" +
+                                     "AND   a_pcts.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   a_pcts.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   a_pcts.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   a_pcts.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   a_pcts.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   a_pcts.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   oc.cod_grupoempresa = iec.cod_grupoempresa    \n" +
+                                     "AND   oc.cod_empresa      = iec.cod_empresa    \n" +
+                                     "AND   oc.cod_filial       = iec.cod_filial \n" +
+                                     "AND   oc.cod_safra        = iec.cod_safra    \n" +
+                                     "AND   oc.numero_ordem     = iec.numeroordemcorte \n" +
+                                     "and   tc.cod_tipocana     = oc.cod_tipocana \n" +
+                                     "AND   b.cod_grupoempresa (+) = iec.cod_grupoempresa \n" + 
+                                     "AND   b.cod_empresa (+)= iec.cod_empresa \n" + 
+                                     "AND   b.cod_filial (+)= iec.cod_filial \n" + 
+                                     "AND   b.cod_safra (+)= iec.cod_safra \n" + 
+                                     "AND   b.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   b.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "AND   c.cod_grupoempresa (+) = iec.cod_grupoempresa \n" +
+                                     "AND   c.cod_empresa (+)= iec.cod_empresa \n" +
+                                     "AND   c.cod_filial (+)= iec.cod_filial \n" +
+                                     "AND   c.cod_safra (+)= iec.cod_safra \n" +
+                                     "AND   c.cod_entradacana (+)= iec.cod_entradacana \n" +
+                                     "AND   c.seq_itensentradacana (+)= iec.seq_itensentradacana \n" +
+                                     "group by to_number(substr(ec.horasaida,1,2))  \n" +
+                                     "order by 1, 2, 3");
