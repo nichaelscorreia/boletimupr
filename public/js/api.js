@@ -34,6 +34,17 @@ const API = {
     }
   },
 
+  async getAgricolaPlanejamento(params = {}) {
+    try {
+      const queryStr = new URLSearchParams(params).toString();
+      const res = await fetch(`${this.baseUrl}/agricola/planejamento?${queryStr}`);
+      return await res.json();
+    } catch (err) {
+      console.error('Erro ao buscar planejamento de colheita:', err);
+      return null;
+    }
+  },
+
   async getIndustria() {
     try {
       const res = await fetch(`${this.baseUrl}/industria`);

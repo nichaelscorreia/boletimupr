@@ -67,6 +67,7 @@ final class QueryRegistry {
         simple("agricola.estimativaSafra", "Estimativa e previsão de término da safra", true, safra);
         simple("agricola.rendimentoTch", "TCH previsto x realizado", true, safra);
         simple("agricola.resumoMensal", "Resumo mensal e por tipo de fazenda", true, safra);
+        simple("agricola.planejamentoColheita", "Estimado x planejado x colhido por lote (talhão)", true, safra);
         Spec[] detalhe = {
             safra,
             Spec.date("datini", true, "data inicial"),

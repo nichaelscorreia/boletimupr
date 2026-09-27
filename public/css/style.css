@@ -237,7 +237,7 @@ body {
   font-family: var(--font-mono);
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--text-light);
+  color: #ffffff;
   background: rgba(0, 0, 0, 0.4);
   padding: 0.35rem 0.65rem;
   border-radius: var(--radius-sm);
@@ -331,6 +331,51 @@ body {
   stroke: #34d399;
 }
 
+/* Setas de "tem mais menu" nas bordas (só aparecem quando há opções escondidas) */
+.nav-wrap {
+  position: relative;
+}
+
+.nav-hint {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0;
+  width: 2.4rem;
+  z-index: 2;
+  display: none;
+  align-items: center;
+  border: none;
+  padding: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent-emerald);
+  cursor: pointer;
+}
+
+.nav-hint-left {
+  left: 0;
+  justify-content: flex-start;
+  background: linear-gradient(90deg, var(--bg-surface) 45%, transparent);
+}
+
+.nav-hint-right {
+  right: 0;
+  justify-content: flex-end;
+  background: linear-gradient(270deg, var(--bg-surface) 45%, transparent);
+  animation: nav-hint-nudge 1.6s ease-in-out infinite;
+}
+
+.nav-wrap.can-left .nav-hint-left,
+.nav-wrap.can-right .nav-hint-right {
+  display: flex;
+}
+
+@keyframes nav-hint-nudge {
+  0%, 100% { padding-right: 0; }
+  50% { padding-right: 0.3rem; }
+}
+
 /* TV Auto-Rotate Controller Pill */
 .tv-control-pill {
   display: flex;
@@ -341,8 +386,22 @@ body {
   border-radius: var(--radius-full);
   padding: 0.25rem 0.65rem;
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: #ffffff;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Tema claro: relógio e botão de rotação em "chip" escuro sólido para a fonte branca contrastar */
+[data-theme="light"] .clock-display,
+[data-theme="light"] .tv-control-pill {
+  background: #1f2937;
+  border-color: #1f2937;
+}
+
+[data-theme="light"] .tv-control-pill.active {
+  background: #047857;
+  border-color: #047857;
+  color: #ffffff;
 }
 
 .tv-control-pill.active {

@@ -13,6 +13,7 @@ const App = {
     // Iniciar na aba Agrícola por padrão (conforme requisito)
     this.switchTab('agricola');
     this.initTheme();
+    this.setupNavHint();
 
     // Atualização periódica dos dados a cada 90 segundos
     this.refreshInterval = setInterval(() => {
@@ -47,6 +48,38 @@ const App = {
       document.documentElement.setAttribute('data-theme', 'light');
       localStorage.setItem('theme', 'light');
     }
+  },
+
+  // Mostra setas nas bordas do menu quando há opções escondidas (celular) e dá uma "puxadinha"
+  // no menu na primeira visita, para o usuário perceber que ele rola para o lado
+  setupNavHint() {
+    const wrap = document.getElementById('nav-wrap');
+    const nav = document.getElementById('nav-container');
+    if (!wrap || !nav) return;
+
+    const update = () => {
+      const max = nav.scrollWidth - nav.clientWidth;
+      wrap.classList.toggle('can-left', nav.scrollLeft > 4);
+      wrap.classList.toggle('can-right', nav.scrollLeft < max - 4);
+    };
+    nav.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+
+    let jaViu = false;
+    try { jaViu = localStorage.getItem('navHintSeen') === '1'; } catch (e) { /* storage indisponível */ }
+    if (!jaViu && nav.scrollWidth > nav.clientWidth) {
+      setTimeout(() => {
+        nav.scrollTo({ left: 90, behavior: 'smooth' });
+        setTimeout(() => nav.scrollTo({ left: 0, behavior: 'smooth' }), 700);
+      }, 1200);
+      try { localStorage.setItem('navHintSeen', '1'); } catch (e) { /* storage indisponível */ }
+    }
+  },
+
+  scrollNav(direction) {
+    const nav = document.getElementById('nav-container');
+    if (nav) nav.scrollBy({ left: direction * nav.clientWidth * 0.7, behavior: 'smooth' });
   },
 
   setupClock() {

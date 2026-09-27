@@ -27,7 +27,60 @@ const FrotaView = {
     const totProp = transportePorProprietario.reduce((acc, r) => ({ hoje: acc.hoje + r.hoje, ontem: acc.ontem + r.ontem, semana: acc.semana + r.semana, safra: acc.safra + r.safra, litros: acc.litros + r.litros }), { hoje: 0, ontem: 0, semana: 0, safra: 0, litros: 0 });
 
     const html = `
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start;">
+      <style>
+        .frota-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 1.25rem;
+          align-items: start;
+        }
+        #frota-modal-detalhe .data-table thead th {
+          position: sticky;
+          top: 0;
+          z-index: 2;
+          background: var(--bg-surface);
+        }
+        @media (max-width: 768px) {
+          .frota-grid { grid-template-columns: minmax(0, 1fr); }
+          .frota-detalhe-panel { display: none; }
+          /* Resumos no celular: cada linha vira um bloco (nome + valores rotulados), sem rolagem lateral */
+          .frota-resumo thead { display: none; }
+          .frota-resumo tr {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.15rem 0.5rem;
+            padding: 0.55rem 0.4rem;
+            border-bottom: 1px solid var(--border-table);
+          }
+          .frota-resumo td {
+            display: block;
+            padding: 0 !important;
+            border: none !important;
+            text-align: left !important;
+            font-size: 0.78rem;
+            min-width: 0;
+            overflow-wrap: anywhere;
+          }
+          .frota-resumo td:first-child { grid-column: 1 / -1; font-size: 0.85rem; margin-bottom: 0.15rem; }
+          .frota-resumo td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-family: var(--font-sans);
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+          }
+          .frota-resumo tr.clickable-row td:first-child::after {
+            content: 'Toque para detalhar ›';
+            float: right;
+            font-size: 0.62rem;
+            font-weight: 500;
+            color: var(--text-muted);
+          }
+        }
+      </style>
+      <div class="frota-grid">
         
         <!-- PAINEL ESQUERDO: 3 TABELAS RESUMO -->
         <div style="display: flex; flex-direction: column; gap: 1.25rem;">
@@ -41,7 +94,7 @@ const FrotaView = {
               </div>
             </div>
             <div class="table-responsive">
-              <table class="data-table mini">
+              <table class="data-table mini frota-resumo">
                 <thead>
                   <tr>
                     <th>Tipo de Equipamento</th>
@@ -57,24 +110,24 @@ const FrotaView = {
                   ${transportePorTipo.map(r => `
                     <tr class="clickable-row" onclick="FrotaView.loadDetalhe('T', ${r.codTipoEquipamento}, '${r.descricao}')" style="cursor: pointer;">
                       <td style="color: #38bdf8; font-weight: 600;">👉 ${r.descricao}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.hoje, 3)}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.ontem, 3)}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.semana, 3)}</td>
-                      <td class="font-mono" style="text-align: right; font-weight: 700;">${this.fmt(r.safra, 3)}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.litros, 1)}</td>
-                      <td class="font-mono" style="text-align: right; color: #34d399;">${r.media !== null ? this.fmt(r.media, 3) : '-'}</td>
+                      <td class="font-mono" data-label="Hoje (t)" style="text-align: right;">${this.fmt(r.hoje, 3)}</td>
+                      <td class="font-mono" data-label="Ontem (t)" style="text-align: right;">${this.fmt(r.ontem, 3)}</td>
+                      <td class="font-mono" data-label="Semana (t)" style="text-align: right;">${this.fmt(r.semana, 3)}</td>
+                      <td class="font-mono" data-label="Safra (t)" style="text-align: right; font-weight: 700;">${this.fmt(r.safra, 3)}</td>
+                      <td class="font-mono" data-label="Litros" style="text-align: right;">${this.fmt(r.litros, 1)}</td>
+                      <td class="font-mono" data-label="Média (l/t)" style="text-align: right; color: #34d399;">${r.media !== null ? this.fmt(r.media, 3) : '-'}</td>
                     </tr>
                   `).join('')}
                 </tbody>
                 <tfoot>
                   <tr style="background: rgba(255,255,255,0.06); font-weight: 700;">
                     <td>Total Transporte</td>
-                    <td class="font-mono" style="text-align: right; color: #38bdf8;">${this.fmt(totTransp.hoje, 3)}</td>
-                    <td class="font-mono" style="text-align: right;">${this.fmt(totTransp.ontem, 3)}</td>
-                    <td class="font-mono" style="text-align: right;">${this.fmt(totTransp.semana, 3)}</td>
-                    <td class="font-mono" style="text-align: right; color: #34d399;">${this.fmt(totTransp.safra, 3)}</td>
-                    <td class="font-mono" style="text-align: right;">${this.fmt(totTransp.litros, 1)}</td>
-                    <td class="font-mono" style="text-align: right; color: #34d399;">${totTransp.safra > 0 ? this.fmt(totTransp.litros / totTransp.safra, 3) : '-'}</td>
+                    <td class="font-mono" data-label="Hoje (t)" style="text-align: right; color: #38bdf8;">${this.fmt(totTransp.hoje, 3)}</td>
+                    <td class="font-mono" data-label="Ontem (t)" style="text-align: right;">${this.fmt(totTransp.ontem, 3)}</td>
+                    <td class="font-mono" data-label="Semana (t)" style="text-align: right;">${this.fmt(totTransp.semana, 3)}</td>
+                    <td class="font-mono" data-label="Safra (t)" style="text-align: right; color: #34d399;">${this.fmt(totTransp.safra, 3)}</td>
+                    <td class="font-mono" data-label="Litros" style="text-align: right;">${this.fmt(totTransp.litros, 1)}</td>
+                    <td class="font-mono" data-label="Média (l/t)" style="text-align: right; color: #34d399;">${totTransp.safra > 0 ? this.fmt(totTransp.litros / totTransp.safra, 3) : '-'}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -90,7 +143,7 @@ const FrotaView = {
               </div>
             </div>
             <div class="table-responsive">
-              <table class="data-table mini">
+              <table class="data-table mini frota-resumo">
                 <thead>
                   <tr>
                     <th>Tipo de Equipamento</th>
@@ -106,24 +159,24 @@ const FrotaView = {
                   ${carregamentoPorTipo.map(r => `
                     <tr class="clickable-row" onclick="FrotaView.loadDetalhe('C', ${r.codTipoEquipamento}, '${r.descricao}')" style="cursor: pointer;">
                       <td style="color: #fbbf24; font-weight: 600;">👉 ${r.descricao}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.hoje, 3)}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.ontem, 3)}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.semana, 3)}</td>
-                      <td class="font-mono" style="text-align: right; font-weight: 700;">${this.fmt(r.safra, 3)}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.litros, 1)}</td>
-                      <td class="font-mono" style="text-align: right; color: #34d399;">${r.media !== null ? this.fmt(r.media, 3) : '-'}</td>
+                      <td class="font-mono" data-label="Hoje (t)" style="text-align: right;">${this.fmt(r.hoje, 3)}</td>
+                      <td class="font-mono" data-label="Ontem (t)" style="text-align: right;">${this.fmt(r.ontem, 3)}</td>
+                      <td class="font-mono" data-label="Semana (t)" style="text-align: right;">${this.fmt(r.semana, 3)}</td>
+                      <td class="font-mono" data-label="Safra (t)" style="text-align: right; font-weight: 700;">${this.fmt(r.safra, 3)}</td>
+                      <td class="font-mono" data-label="Litros" style="text-align: right;">${this.fmt(r.litros, 1)}</td>
+                      <td class="font-mono" data-label="Média (l/t)" style="text-align: right; color: #34d399;">${r.media !== null ? this.fmt(r.media, 3) : '-'}</td>
                     </tr>
                   `).join('')}
                 </tbody>
                 <tfoot>
                   <tr style="background: rgba(255,255,255,0.06); font-weight: 700;">
                     <td>Total Carregamento</td>
-                    <td class="font-mono" style="text-align: right; color: #fbbf24;">${this.fmt(totCarreg.hoje, 3)}</td>
-                    <td class="font-mono" style="text-align: right;">${this.fmt(totCarreg.ontem, 3)}</td>
-                    <td class="font-mono" style="text-align: right;">${this.fmt(totCarreg.semana, 3)}</td>
-                    <td class="font-mono" style="text-align: right; color: #34d399;">${this.fmt(totCarreg.safra, 3)}</td>
-                    <td class="font-mono" style="text-align: right;">${this.fmt(totCarreg.litros, 1)}</td>
-                    <td class="font-mono" style="text-align: right; color: #34d399;">${totCarreg.safra > 0 ? this.fmt(totCarreg.litros / totCarreg.safra, 3) : '-'}</td>
+                    <td class="font-mono" data-label="Hoje (t)" style="text-align: right; color: #fbbf24;">${this.fmt(totCarreg.hoje, 3)}</td>
+                    <td class="font-mono" data-label="Ontem (t)" style="text-align: right;">${this.fmt(totCarreg.ontem, 3)}</td>
+                    <td class="font-mono" data-label="Semana (t)" style="text-align: right;">${this.fmt(totCarreg.semana, 3)}</td>
+                    <td class="font-mono" data-label="Safra (t)" style="text-align: right; color: #34d399;">${this.fmt(totCarreg.safra, 3)}</td>
+                    <td class="font-mono" data-label="Litros" style="text-align: right;">${this.fmt(totCarreg.litros, 1)}</td>
+                    <td class="font-mono" data-label="Média (l/t)" style="text-align: right; color: #34d399;">${totCarreg.safra > 0 ? this.fmt(totCarreg.litros / totCarreg.safra, 3) : '-'}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -139,7 +192,7 @@ const FrotaView = {
               </div>
             </div>
             <div class="table-responsive">
-              <table class="data-table mini">
+              <table class="data-table mini frota-resumo">
                 <thead>
                   <tr>
                     <th>Proprietário</th>
@@ -155,24 +208,24 @@ const FrotaView = {
                   ${transportePorProprietario.map(r => `
                     <tr class="clickable-row" onclick="FrotaView.loadDetalhe('P', ${r.codFornecedor}, '${r.nome}')" style="cursor: pointer;">
                       <td style="color: #34d399; font-weight: 600;">👉 ${r.nome}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.hoje, 3)}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.ontem, 3)}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.semana, 3)}</td>
-                      <td class="font-mono" style="text-align: right; font-weight: 700;">${this.fmt(r.safra, 3)}</td>
-                      <td class="font-mono" style="text-align: right;">${this.fmt(r.litros, 1)}</td>
-                      <td class="font-mono" style="text-align: right; color: #34d399;">${r.media !== null ? this.fmt(r.media, 3) : '-'}</td>
+                      <td class="font-mono" data-label="Hoje (t)" style="text-align: right;">${this.fmt(r.hoje, 3)}</td>
+                      <td class="font-mono" data-label="Ontem (t)" style="text-align: right;">${this.fmt(r.ontem, 3)}</td>
+                      <td class="font-mono" data-label="Semana (t)" style="text-align: right;">${this.fmt(r.semana, 3)}</td>
+                      <td class="font-mono" data-label="Safra (t)" style="text-align: right; font-weight: 700;">${this.fmt(r.safra, 3)}</td>
+                      <td class="font-mono" data-label="Litros" style="text-align: right;">${this.fmt(r.litros, 1)}</td>
+                      <td class="font-mono" data-label="Média (l/t)" style="text-align: right; color: #34d399;">${r.media !== null ? this.fmt(r.media, 3) : '-'}</td>
                     </tr>
                   `).join('')}
                 </tbody>
                 <tfoot>
                   <tr style="background: rgba(255,255,255,0.06); font-weight: 700;">
                     <td>Total Geral</td>
-                    <td class="font-mono" style="text-align: right; color: #34d399;">${this.fmt(totProp.hoje, 3)}</td>
-                    <td class="font-mono" style="text-align: right;">${this.fmt(totProp.ontem, 3)}</td>
-                    <td class="font-mono" style="text-align: right;">${this.fmt(totProp.semana, 3)}</td>
-                    <td class="font-mono" style="text-align: right; color: #34d399;">${this.fmt(totProp.safra, 3)}</td>
-                    <td class="font-mono" style="text-align: right;">${this.fmt(totProp.litros, 1)}</td>
-                    <td class="font-mono" style="text-align: right; color: #34d399;">${totProp.safra > 0 ? this.fmt(totProp.litros / totProp.safra, 3) : '-'}</td>
+                    <td class="font-mono" data-label="Hoje (t)" style="text-align: right; color: #34d399;">${this.fmt(totProp.hoje, 3)}</td>
+                    <td class="font-mono" data-label="Ontem (t)" style="text-align: right;">${this.fmt(totProp.ontem, 3)}</td>
+                    <td class="font-mono" data-label="Semana (t)" style="text-align: right;">${this.fmt(totProp.semana, 3)}</td>
+                    <td class="font-mono" data-label="Safra (t)" style="text-align: right; color: #34d399;">${this.fmt(totProp.safra, 3)}</td>
+                    <td class="font-mono" data-label="Litros" style="text-align: right;">${this.fmt(totProp.litros, 1)}</td>
+                    <td class="font-mono" data-label="Média (l/t)" style="text-align: right; color: #34d399;">${totProp.safra > 0 ? this.fmt(totProp.litros / totProp.safra, 3) : '-'}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -182,7 +235,7 @@ const FrotaView = {
         </div>
 
         <!-- PAINEL DIREITO: DETALHAMENTO POR EQUIPAMENTO -->
-        <div class="section-card" id="frota-detalhe-panel" style="position: sticky; top: 1rem;">
+        <div class="section-card frota-detalhe-panel" id="frota-detalhe-panel" style="position: sticky; top: 1rem;">
           <div class="section-header" style="justify-content: space-between;">
             <div class="section-title">
               <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -206,16 +259,31 @@ const FrotaView = {
 
     container.innerHTML = html;
 
-    // Carregar detalhamento inicial
-    this.loadDetalhe(this.selectedFilter.tipo, this.selectedFilter.codigo, this.selectedFilter.label);
+    // Carregar detalhamento inicial (no celular o detalhe abre em janela ao tocar numa linha)
+    if (!this.isMobile()) {
+      this.loadDetalhe(this.selectedFilter.tipo, this.selectedFilter.codigo, this.selectedFilter.label);
+    }
+  },
+
+  isMobile() {
+    return window.matchMedia('(max-width: 768px)').matches;
   },
 
   async loadDetalhe(tipo, codigo, label) {
     this.selectedFilter = { tipo, codigo, label };
-    const badge = document.getElementById('frota-detalhe-badge');
-    if (badge) badge.innerText = label;
-
-    const content = document.getElementById('frota-detalhe-content');
+    let content;
+    if (this.isMobile()) {
+      Modal.open({
+        title: `Detalhamento por Equipamento — ${label}`,
+        width: '95vw',
+        htmlContent: '<div id="frota-modal-detalhe" class="table-responsive" style="max-height: 70vh; overflow: auto;"></div>'
+      });
+      content = document.getElementById('frota-modal-detalhe');
+    } else {
+      const badge = document.getElementById('frota-detalhe-badge');
+      if (badge) badge.innerText = label;
+      content = document.getElementById('frota-detalhe-content');
+    }
     if (!content) return;
 
     content.innerHTML = `

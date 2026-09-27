@@ -3,6 +3,7 @@ const router = express.Router();
 const oracle = require('../db/oracle');
 const queries = require('../db/queries');
 const config = require('../config');
+const planejamento = require('../services/planejamentoColheita');
 
 // Helper to format float values
 function parseNum(val, decimals = 2) {
@@ -26,7 +27,8 @@ router.get('/', async (req, res) => {
       detFornecRows,
       detVarRows,
       colhedoraRows,
-      manualRows
+      manualRows,
+      planejamentoRows
     ] = await Promise.all([
       oracle.executeQuery(queries.agricola.dataHoraAtual),
       oracle.executeQuery(queries.agricola.resumoCompleto(safra)),
@@ -36,7 +38,8 @@ router.get('/', async (req, res) => {
       oracle.executeQuery(queries.agricola.detalhePorFornecedor(safra, '19/09/2026', '19/09/2026', 0, 23, 'T', '0')),
       oracle.executeQuery(queries.agricola.detalhePorVariedade(safra, '19/09/2026', '19/09/2026', 0, 23, 'T', '0')),
       oracle.executeQuery(queries.agricola.resumoColhedora(safra)),
-      oracle.executeQuery(queries.agricola.resumoManual(safra))
+      oracle.executeQuery(queries.agricola.resumoManual(safra)),
+      oracle.executeQuery(queries.agricola.planejamentoColheita(safra))
     ]);
 
     const dathor = dataHoraRows && dataHoraRows[0] ? dataHoraRows[0].DATHOR : '19/09/2026 10:31';
@@ -254,13 +257,33 @@ router.get('/', async (req, res) => {
       rendimentoTch: rendimentoTch,
       resumoMensal: resumoMensal,
       detalheFornecedores: detalheFornecedores,
-      detalheVariedades: detalheVariedades
+      detalheVariedades: detalheVariedades,
+      // null = consulta indisponível (a tela mostra aviso em vez de números inventados)
+      planejamentoColheita: planejamentoRows ? planejamento.resumoGrupos(planejamentoRows) : null
     });
 
   } catch (err) {
     console.error('Erro na rota /api/agricola:', err);
     res.status(500).json({ error: 'Erro interno ao consultar dados agrícolas', details: err.message });
   }
+});
+
+// GET /api/agricola/planejamento?grupo=0..5[&fornecedor=cod[&fazenda=cod]]
+// Detalhamento dos cards de planejamento: grupo -> fornecedores -> fazendas -> lotes
+router.get('/planejamento', async (req, res) => {
+  const inteiro = (v) => (v === undefined || v === '' ? null : (/^\d{1,9}$/.test(v) ? parseInt(v, 10) : NaN));
+  const grupo = inteiro(req.query.grupo);
+  const fornecedor = inteiro(req.query.fornecedor);
+  const fazenda = inteiro(req.query.fazenda);
+  if (grupo === null || [grupo, fornecedor, fazenda].some(Number.isNaN) || grupo > 5 || (fazenda !== null && fornecedor === null)) {
+    return res.status(400).json({ success: false, error: 'Parâmetros inválidos' });
+  }
+
+  const rows = await oracle.executeQuery(queries.agricola.planejamentoColheita(config.safra));
+  if (!rows) {
+    return res.status(503).json({ success: false, error: 'Dados de planejamento indisponíveis' });
+  }
+  res.json({ success: true, ...planejamento.detalhe(rows, { grupo, fornecedor, fazenda }) });
 });
 
 // GET /api/agricola/detalhe - Busca drilldown dinâmico ao clicar numa linha

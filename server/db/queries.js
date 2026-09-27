@@ -26,6 +26,8 @@ module.exports = {
     rendimentoTch: (safra = 54) => q('agricola.rendimentoTch', { safra }),
     // Resumo Mensal da Safra
     resumoMensal: (safra = 54) => q('agricola.resumoMensal', { safra }),
+    // Estimado x planejado x colhido por lote (KPIs de cumprimento do planejamento)
+    planejamentoColheita: (safra = 54) => q('agricola.planejamentoColheita', { safra }),
     // Detalhe por Fornecedor (Query 7 do mobile_detalhe.jsp)
     detalhePorFornecedor: (safra = 54, datini = '19/09/2026', datfin = '19/09/2026', horini = 0, horfin = 23, tipcol = 'T', tipo = '0') =>
       q('agricola.detalheFornecedor', detalheParams(safra, datini, datfin, horini, horfin, tipcol, tipo)),

@@ -13,7 +13,7 @@ from (select sum(a.toneladas_estimadas) toneladas_estimadas,
             where a.cod_safra   = :safra
             and   a.cod_fazenda = b.cod_fazenda
             and   trunc(sysdate) between b.data_inicio and nvl(b.data_fim, trunc(sysdate))
-            --and   b.cod_fornecedor = 4093
+            and   b.cod_fornecedor = 4093
             --and   a.cod_fazenda   <> 2842
             and   a.cod_fazenda    = c.cod_fazenda
             and   a.rendimentoagricola > 0) a) a,
