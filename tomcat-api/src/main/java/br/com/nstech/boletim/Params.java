@@ -27,7 +27,7 @@ final class Params {
         }
     }
 
-    enum Type { INT, DATE, ENUM }
+    enum Type { INT, DATE, ENUM, TEXT, PATTERN }
 
     /** Definição de um parâmetro de consulta. */
     static final class Spec {
@@ -39,6 +39,7 @@ final class Params {
         int max;
         List<String> values;
         Object def;
+        Pattern pattern;
 
         private Spec(String name, Type type, boolean required, String doc) {
             this.name = name;
@@ -64,6 +65,20 @@ final class Params {
             return s;
         }
 
+        /** Texto livre até maxLen caracteres (sem caracteres de controle). */
+        static Spec text(String name, boolean required, int maxLen, String doc) {
+            Spec s = new Spec(name, Type.TEXT, required, doc);
+            s.max = maxLen;
+            return s;
+        }
+
+        /** Texto que precisa casar inteiro com a expressão regular. */
+        static Spec pattern(String name, boolean required, String regex, String doc) {
+            Spec s = new Spec(name, Type.PATTERN, required, doc);
+            s.pattern = Pattern.compile(regex);
+            return s;
+        }
+
         /** Valor usado quando o parâmetro não é enviado. */
         Spec orDefault(Object value) {
             this.def = value;
@@ -81,6 +96,15 @@ final class Params {
                 case DATE:
                     if (!isValidDate(raw)) throw bad("deve ser data dd/mm/aaaa");
                     return raw;
+                case TEXT:
+                    if (raw.length() > max) throw bad("deve ter no máximo " + max + " caracteres");
+                    for (int i = 0; i < raw.length(); i++) {
+                        if (Character.isISOControl(raw.charAt(i))) throw bad("contém caracteres inválidos");
+                    }
+                    return raw;
+                case PATTERN:
+                    if (!pattern.matcher(raw).matches()) throw bad("em formato inválido");
+                    return raw;
                 default:
                     if (!values.contains(raw)) throw bad("deve ser um de " + values);
                     return raw;
@@ -96,6 +120,8 @@ final class Params {
             switch (type) {
                 case INT: sb.append("inteiro ").append(min).append("..").append(max); break;
                 case DATE: sb.append("data dd/mm/aaaa"); break;
+                case TEXT: sb.append("texto até ").append(max).append(" caracteres"); break;
+                case PATTERN: sb.append("texto no formato ").append(pattern.pattern()); break;
                 default: sb.append(values); break;
             }
             sb.append(required ? " (obrigatório)" : " (opcional)");

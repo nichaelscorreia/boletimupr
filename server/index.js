@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const config = require('./config');
 const oracle = require('./db/oracle');
@@ -10,24 +9,19 @@ const producaoRoutes = require('./routes/producao');
 const frotaRoutes = require('./routes/frota');
 const laboratorioRoutes = require('./routes/laboratorio');
 const outrosRoutes = require('./routes/outros');
+const acessoRoutes = require('./routes/acesso');
+const { exigirDispositivoAprovado } = require('./services/acessoDispositivo');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// No Render o app fica atrás de um proxy HTTPS: necessário para req.secure (cookie Secure) e req.ip
+app.set('trust proxy', 1);
+app.use(express.json({ limit: '10kb' }));
 
 // Servir frontend estático da pasta public/
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Rotas da API REST
-app.use('/api/agricola', agricolaRoutes);
-app.use('/api/industria', industriaRoutes);
-app.use('/api/producao', producaoRoutes);
-app.use('/api/frota', frotaRoutes);
-app.use('/api/laboratorio', laboratorioRoutes);
-app.use('/api', outrosRoutes);
-
-// Health check e status da conexão Oracle
+// Health check e status da conexão Oracle (livre: usado pelo health check do Render)
 app.get('/api/status', (req, res) => {
   res.json({
     app: 'Boletim Online de Moagem',
@@ -37,6 +31,20 @@ app.get('/api/status', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Identificação/liberação de dispositivos (livre para quem ainda não foi liberado)
+app.use('/api/acesso', acessoRoutes);
+
+// Daqui para baixo, só dispositivos liberados
+app.use('/api', exigirDispositivoAprovado);
+
+// Rotas da API REST
+app.use('/api/agricola', agricolaRoutes);
+app.use('/api/industria', industriaRoutes);
+app.use('/api/producao', producaoRoutes);
+app.use('/api/frota', frotaRoutes);
+app.use('/api/laboratorio', laboratorioRoutes);
+app.use('/api', outrosRoutes);
 
 // Fallback SPA
 app.get('*', (req, res) => {

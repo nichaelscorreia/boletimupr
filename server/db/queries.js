@@ -81,6 +81,18 @@ module.exports = {
     disponibilidadeCompleta: (safra = 54) => q('frota.disponibilidade', comInicio({ safra }))
   },
 
+  // --- CONTROLE DE ACESSO POR DISPOSITIVO ---
+  acesso: {
+    dispositivo: (hash) => q('acesso.dispositivo', { hash }),
+    listar: () => q('acesso.listar'),
+    solicitar: (dados) => q('acesso.solicitar', dados),
+    liberarComCodigo: (hash) => q('acesso.liberarComCodigo', { hash }),
+    alterarStatus: (id, status, por) => q('acesso.alterarStatus', { id, status, por }),
+    definirAdmin: (id, admin, por) => q('acesso.definirAdmin', { id, admin, por }),
+    excluir: (id) => q('acesso.excluir', { id }),
+    registrarUso: (hash, ip) => q('acesso.registrarUso', { hash, ip })
+  },
+
   // --- MÓDULO LABORATÓRIO (INDICADORES INDUSTRIAIS) ---
   laboratorio: {
     indicadores: (safra = 54) => q('laboratorio.indicadores', { safra }),

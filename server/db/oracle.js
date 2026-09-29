@@ -17,16 +17,18 @@ function buildUrl(path, params = {}) {
   return url;
 }
 
-// Assinatura HMAC-SHA256: o segredo nunca trafega, só a assinatura (válida por poucos minutos)
-async function apiGet(path, params) {
+// Assinatura HMAC-SHA256: o segredo nunca trafega, só a assinatura (válida por poucos minutos).
+// Parâmetros sempre na query string (inclusive em POST), para ficarem cobertos pela assinatura.
+async function apiRequest(method, path, params) {
   const url = buildUrl(path, params);
   const timestamp = String(Date.now());
   const signature = crypto
     .createHmac('sha256', config.api.secret)
-    .update(`${timestamp}\nGET\n${url.pathname}${url.search}`)
+    .update(`${timestamp}\n${method}\n${url.pathname}${url.search}`)
     .digest('hex');
 
   const res = await fetch(url, {
+    method,
     headers: {
       'Accept': 'application/json',
       'X-Boletim-Timestamp': timestamp,
@@ -48,6 +50,8 @@ async function apiGet(path, params) {
   }
   return body;
 }
+
+const apiGet = (path, params) => apiRequest('GET', path, params);
 
 async function isApiAlive() {
   try {
@@ -111,6 +115,20 @@ async function executeQuery(query) {
   }
 }
 
+// Comandos de escrita (POST). Diferente de executeQuery, repassa o erro para quem chamou decidir.
+async function executeCommand(command) {
+  const data = await apiRequest('POST', `/api/q/${command.name}`, command.params);
+  isConnected = true;
+  return data;
+}
+
+// Consulta que precisa distinguir "sem linhas" de "API fora do ar" (lança erro em vez de devolver null)
+async function executeQueryStrict(query) {
+  const data = await apiGet(`/api/q/${query.name}`, query.params);
+  isConnected = true;
+  return Array.isArray(data) ? data : [];
+}
+
 function isOracleConnected() {
   return isConnected;
 }
@@ -118,5 +136,7 @@ function isOracleConnected() {
 module.exports = {
   initOraclePool,
   executeQuery,
+  executeQueryStrict,
+  executeCommand,
   isOracleConnected
 };

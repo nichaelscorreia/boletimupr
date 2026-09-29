@@ -30,12 +30,19 @@ final class QueryRegistry {
         final String description;
         final List<Spec> params;
         final boolean cacheable;
+        /** Comando de escrita (INSERT/UPDATE/MERGE/DELETE): só via POST e nunca em cache. */
+        final boolean write;
         final SqlBuilder builder;
 
         Query(String name, String description, boolean cacheable, SqlBuilder builder, Spec... params) {
+            this(name, description, cacheable, false, builder, params);
+        }
+
+        Query(String name, String description, boolean cacheable, boolean write, SqlBuilder builder, Spec... params) {
             this.name = name;
             this.description = description;
-            this.cacheable = cacheable;
+            this.cacheable = cacheable && !write;
+            this.write = write;
             this.builder = builder;
             this.params = Collections.unmodifiableList(Arrays.asList(params));
         }
@@ -117,6 +124,30 @@ final class QueryRegistry {
         simple("laboratorio.indicadores", "Indicadores industriais (ontem/hoje/safra)", true, safra);
         simple("laboratorio.moagemMedia", "Moagem média por hora", true, safra, inicioSafra);
 
+        // --- CONTROLE DE ACESSO POR DISPOSITIVO (tabela NST_DISPOSITIVO_ACESSO) ---
+        // Único ponto da API que grava no banco; os comandos só tocam nessa tabela.
+        Spec hash = Spec.pattern("hash", true, "[0-9a-f]{64}", "SHA-256 (hex) do identificador do dispositivo");
+        Spec id = Spec.integer("id", true, 1, 999999999, "ID do dispositivo");
+        Spec por = Spec.text("por", true, 100, "quem executou a ação");
+        Spec ip = Spec.pattern("ip", false, "[0-9A-Fa-f:.]{1,45}", "IP do cliente");
+        simple("acesso.dispositivo", "Situação de um dispositivo pelo hash", false, hash);
+        simple("acesso.listar", "Todos os dispositivos (painel de administração)", false);
+        command("acesso.solicitar", "Registra (ou atualiza, se ainda pendente) um pedido de acesso",
+            hash,
+            Spec.text("nome", true, 100, "nome de quem solicita"),
+            Spec.text("setor", false, 100, "setor/função"),
+            Spec.text("contato", false, 100, "telefone ou e-mail"),
+            Spec.text("descricao", true, 100, "identificação do dispositivo"),
+            Spec.text("userAgent", false, 400, "navegador"),
+            ip);
+        command("acesso.liberarComCodigo", "Aprova o dispositivo como administrador (código de liberação)", hash);
+        command("acesso.alterarStatus", "Aprova ou bloqueia um dispositivo", id,
+            Spec.oneOf("status", "A = aprovado, B = bloqueado", "A", "B"), por);
+        command("acesso.definirAdmin", "Concede/retira administração de um dispositivo aprovado", id,
+            Spec.oneOf("admin", "S ou N", "S", "N"), por);
+        command("acesso.excluir", "Remove um dispositivo da lista", id);
+        command("acesso.registrarUso", "Atualiza a data/IP do último acesso", hash, ip);
+
         // Falha na subida (e não na primeira requisição) se algum SQL com variantes estiver faltando
         for (String f : new String[] {"agricola_resumo", "agricola_detalheFornecedor", "agricola_detalheVariedade",
                                       "frota_detalheCarregamento", "frota_detalheTransporte"}) {
@@ -154,6 +185,12 @@ final class QueryRegistry {
         final String file = name.replace('.', '_');
         sql(file);
         add(new Query(name, description, cacheable, v -> sql(file), params));
+    }
+
+    private void command(String name, String description, Spec... params) {
+        final String file = name.replace('.', '_');
+        sql(file);
+        add(new Query(name, description, false, true, v -> sql(file), params));
     }
 
     private void add(Query q) {

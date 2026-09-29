@@ -14,3 +14,5 @@ services:
         value: http://nstech.ddns.net:8086/boletim-api
       - key: BOLETIM_API_SECRET
         sync: false # informe no painel do Render (não versionar)
+      - key: ACESSO_CODIGO_LIBERACAO
+        sync: false # código do seu primeiro acesso como administrador (não versionar)

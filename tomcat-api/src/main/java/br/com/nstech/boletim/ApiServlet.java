@@ -29,6 +29,8 @@ import javax.servlet.http.HttpServletResponse;
  *   /api/queries         autenticado, lista as consultas e parâmetros aceitos
  *   /api/q/{consulta}    autenticado, executa uma consulta do catálogo e devolve um array JSON
  *                        (chaves em MAIÚSCULAS e valores como texto, igual ao antigo OracleBridge)
+ *   POST /api/q/{comando} autenticado, executa um comando de escrita do catálogo (parâmetros na
+ *                        query string, cobertos pela assinatura; corpo não é aceito) e devolve {"linhas":n}
  */
 public class ApiServlet extends HttpServlet {
 
@@ -83,6 +85,15 @@ public class ApiServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        handle(req, resp, false);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        handle(req, resp, true);
+    }
+
+    private void handle(HttpServletRequest req, HttpServletResponse resp, boolean post) throws IOException {
         resp.setHeader("Cache-Control", "no-store");
         resp.setHeader("X-Content-Type-Options", "nosniff");
 
@@ -117,21 +128,34 @@ public class ApiServlet extends HttpServlet {
             return;
         }
 
-        if ("/ping".equals(path)) {
+        if (post) {
+            // Parâmetros de corpo não são cobertos pela assinatura: recusa qualquer corpo
+            if (req.getContentLength() > 0 || req.getHeader("Transfer-Encoding") != null) {
+                send(resp, 400, error("Envie os parâmetros na query string"));
+            } else if (path.startsWith("/q/")) {
+                runQuery(req, resp, path.substring(3), true);
+            } else {
+                send(resp, 405, error("Método não permitido"));
+            }
+        } else if ("/ping".equals(path)) {
             ping(resp);
         } else if ("/queries".equals(path)) {
             listQueries(resp);
         } else if (path.startsWith("/q/")) {
-            runQuery(req, resp, path.substring(3));
+            runQuery(req, resp, path.substring(3), false);
         } else {
             send(resp, 404, error("Endpoint inexistente"));
         }
     }
 
-    private void runQuery(HttpServletRequest req, HttpServletResponse resp, String name) throws IOException {
+    private void runQuery(HttpServletRequest req, HttpServletResponse resp, String name, boolean post) throws IOException {
         final Query q = registry.get(name);
         if (q == null) {
             send(resp, 404, error("Consulta inexistente: " + name));
+            return;
+        }
+        if (q.write != post) {
+            send(resp, 405, error(q.write ? "Comando exige POST" : "Consulta exige GET"));
             return;
         }
 
@@ -146,7 +170,9 @@ public class ApiServlet extends HttpServlet {
         final NamedSql sql = registry.parse(q.builder.build(values));
         long start = System.currentTimeMillis();
         try {
-            byte[] body = cache.get(q.name + values, q.cacheable, () -> execute(sql, values));
+            byte[] body = q.write
+                ? execute(sql, values, true)
+                : cache.get(q.name + values, q.cacheable, () -> execute(sql, values));
             long ms = System.currentTimeMillis() - start;
             if (ms > 5000) log("Consulta lenta " + q.name + " " + values + ": " + ms + " ms");
             send(resp, 200, body);
@@ -182,6 +208,8 @@ public class ApiServlet extends HttpServlet {
                 values.put(s.name, cfg.safraPadrao);
             } else if ("inicioSafra".equals(s.name)) {
                 values.put(s.name, cfg.inicioSafraPadrao);
+            } else {
+                values.put(s.name, null); // opcional sem padrão: vai como NULL
             }
         }
         if (values.containsKey("safra")) {
@@ -191,6 +219,10 @@ public class ApiServlet extends HttpServlet {
     }
 
     private byte[] execute(NamedSql sql, Map<String, Object> values) throws Exception {
+        return execute(sql, values, false);
+    }
+
+    private byte[] execute(NamedSql sql, Map<String, Object> values, boolean write) throws Exception {
         Pooled p = pool.borrow();
         boolean broken = false;
         try {
@@ -206,6 +238,9 @@ public class ApiServlet extends HttpServlet {
                     Object v = values.get(n);
                     if (v instanceof Integer) ps.setInt(i + 1, (Integer) v);
                     else ps.setString(i + 1, (String) v);
+                }
+                if (write) {
+                    return ("{\"linhas\":" + ps.executeUpdate() + "}").getBytes(StandardCharsets.UTF_8);
                 }
                 ResultSet rs = ps.executeQuery();
                 try {

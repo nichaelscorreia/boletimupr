@@ -4,7 +4,11 @@ const App = {
   currentTab: 'agricola',
   refreshInterval: null,
 
-  init() {
+  async init() {
+    this.initTheme();
+    // Controle de acesso por dispositivo: sem liberação, mostra a tela de identificação e não carrega dados
+    if (!(await Acesso.iniciar())) return;
+
     this.setupClock();
     Drawer.init();
     Modal.init();
@@ -12,7 +16,6 @@ const App = {
 
     // Iniciar na aba Agrícola por padrão (conforme requisito)
     this.switchTab('agricola');
-    this.initTheme();
     this.setupNavHint();
 
     // Atualização periódica dos dados a cada 90 segundos

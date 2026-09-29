@@ -40,6 +40,15 @@ Se o log mostrar `Boletim API NÃO configurada`, confira o passo 1 (a API respon
 - **Recomendado**: use um usuário Oracle só com permissão de `SELECT` nas tabelas usadas, e HTTPS no
   Tomcat (a assinatura protege o acesso, mas sem HTTPS os dados de resposta trafegam sem criptografia).
 
+## Controle de acesso por dispositivo
+
+A API também guarda os dispositivos liberados na tabela `NST_DISPOSITIVO_ACESSO`
+(script em [`ddl/nst_dispositivo_acesso.sql`](ddl/nst_dispositivo_acesso.sql)). É o **único** ponto que
+grava no banco: comandos `acesso.*` via `POST /api/q/{comando}`, com os parâmetros na query string
+(cobertos pela assinatura; requisição com corpo é recusada), e só sobre essa tabela.
+Se trocar `DB_USER` por um usuário somente leitura, conceda a ele `SELECT, INSERT, UPDATE, DELETE`
+nessa tabela e `SELECT` na sequência `NST_DISPOSITIVO_ACESSO_SEQ`.
+
 ## Configuração (`boletim-api.xml`)
 
 | Parâmetro | Padrão | Descrição |
