@@ -26,6 +26,8 @@ import javax.servlet.http.HttpServletResponse;
  * Endpoints (todos GET):
  *   /api/health          sem autenticação, não toca no banco
  *   /api/ping            autenticado, executa SELECT 1 FROM DUAL
+ *   /api/diag            autenticado, versões (Java/Tomcat/driver/Oracle), erro completo de conexão e
+ *                        situação da tabela de dispositivos — para suporte remoto sem acesso ao servidor
  *   /api/queries         autenticado, lista as consultas e parâmetros aceitos
  *   /api/q/{consulta}    autenticado, executa uma consulta do catálogo e devolve um array JSON
  *                        (chaves em MAIÚSCULAS e valores como texto, igual ao antigo OracleBridge)
@@ -139,6 +141,8 @@ public class ApiServlet extends HttpServlet {
             }
         } else if ("/ping".equals(path)) {
             ping(resp);
+        } else if ("/diag".equals(path)) {
+            diag(resp);
         } else if ("/queries".equals(path)) {
             listQueries(resp);
         } else if (path.startsWith("/q/")) {
@@ -167,6 +171,16 @@ public class ApiServlet extends HttpServlet {
             return;
         }
 
+        if (q.name.startsWith("acesso.")) {
+            try {
+                garantirTabelaAcesso();
+            } catch (Exception e) {
+                log("Não foi possível preparar a tabela de dispositivos", e);
+                send(resp, 500, error("Tabela de dispositivos indisponível: " + causas(e)));
+                return;
+            }
+        }
+
         final NamedSql sql = registry.parse(q.builder.build(values));
         long start = System.currentTimeMillis();
         try {
@@ -179,7 +193,7 @@ public class ApiServlet extends HttpServlet {
         } catch (Exception e) {
             String ref = UUID.randomUUID().toString().substring(0, 8);
             log("Erro [" + ref + "] na consulta " + q.name + " " + values, e);
-            String msg = e instanceof SQLException ? e.getMessage() : "Erro interno";
+            String msg = e instanceof SQLException ? causas(e) : "Erro interno";
             send(resp, 500, "{\"error\":" + Json.quote(msg == null ? "Erro interno" : msg.trim())
                 + ",\"ref\":\"" + ref + "\"}");
         }
@@ -288,8 +302,121 @@ public class ApiServlet extends HttpServlet {
             send(resp, 200, "{\"status\":\"ok\",\"db\":" + new String(body, StandardCharsets.UTF_8) + "}");
         } catch (Exception e) {
             log("Ping ao Oracle falhou", e);
-            send(resp, 503, error("Oracle indisponível"));
+            send(resp, 503, error("Oracle indisponível: " + causas(e)));
         }
+    }
+
+    /** Situação completa para suporte remoto (nunca devolve usuário/senha do banco). */
+    private void diag(HttpServletResponse resp) throws IOException {
+        StringBuilder sb = new StringBuilder("{");
+        sb.append("\"java\":").append(Json.quote(System.getProperty("java.version") + " (" + System.getProperty("java.vendor") + ")"));
+        sb.append(",\"tomcat\":").append(Json.quote(getServletContext().getServerInfo()));
+        long t0 = System.currentTimeMillis();
+        Pooled p = null;
+        boolean broken = false;
+        try {
+            p = pool.borrow();
+            java.sql.DatabaseMetaData md = p.con.getMetaData();
+            sb.append(",\"driver\":").append(Json.quote(md.getDriverName() + " " + md.getDriverVersion()));
+            sb.append(",\"conexao\":\"ok\",\"tempoMs\":").append(System.currentTimeMillis() - t0);
+            sb.append(",\"oracle\":").append(Json.quote(md.getDatabaseProductVersion().replace('\n', ' ')));
+            sb.append(",\"usuarioBanco\":").append(Json.quote(md.getUserName()));
+        } catch (Exception e) {
+            broken = true;
+            sb.append(",\"conexao\":\"erro\",\"tempoMs\":").append(System.currentTimeMillis() - t0);
+            sb.append(",\"erro\":").append(Json.quote(causas(e)));
+        } finally {
+            if (p != null) pool.release(p, broken);
+        }
+        String tabela;
+        try {
+            garantirTabelaAcesso();
+            tabela = "ok";
+        } catch (Exception e) {
+            tabela = "erro: " + causas(e);
+        }
+        sb.append(",\"tabelaDispositivos\":").append(Json.quote(tabela));
+        sb.append(",\"safraPadrao\":").append(cfg.safraPadrao);
+        sb.append(",\"inicioSafraPadrao\":").append(Json.quote(cfg.inicioSafraPadrao));
+        send(resp, 200, sb.append('}').toString());
+    }
+
+    /** Mensagens de toda a cadeia de causas (o erro útil do driver costuma estar lá no fundo). */
+    private static String causas(Throwable e) {
+        StringBuilder sb = new StringBuilder();
+        java.util.Set<Throwable> vistos = new java.util.HashSet<Throwable>();
+        for (Throwable t = e; t != null && vistos.add(t); t = t.getCause()) {
+            if (sb.length() > 0) sb.append(" <- ");
+            sb.append(t.getClass().getSimpleName());
+            if (t.getMessage() != null) sb.append(": ").append(t.getMessage().trim());
+        }
+        return sb.length() > 1500 ? sb.substring(0, 1500) + "…" : sb.toString();
+    }
+
+    // --- Tabela de dispositivos: criada automaticamente se não existir (a usina não tem acesso ao banco) ---
+
+    private volatile boolean tabelaAcessoOk;
+
+    private synchronized void garantirTabelaAcesso() throws Exception {
+        if (tabelaAcessoOk) return;
+        Pooled p = pool.borrow();
+        boolean broken = false;
+        try {
+            java.sql.Statement st = p.con.createStatement();
+            try {
+                boolean temTabela = conta(st, "select count(*) from user_tables where table_name = 'NST_DISPOSITIVO_ACESSO'") > 0;
+                boolean temSequencia = conta(st, "select count(*) from user_sequences where sequence_name = 'NST_DISPOSITIVO_ACESSO_SEQ'") > 0;
+                if (!temTabela || !temSequencia) {
+                    for (String cmd : ddlAcesso()) {
+                        String c = cmd.toLowerCase();
+                        boolean executar = (c.startsWith("create table") && !temTabela)
+                            || (c.startsWith("comment") && !temTabela)
+                            || (c.startsWith("create sequence") && !temSequencia);
+                        if (executar) st.execute(cmd);
+                    }
+                    log("Tabela de dispositivos criada/completada (tabela existia: " + temTabela + ", sequência existia: " + temSequencia + ")");
+                }
+                tabelaAcessoOk = true;
+            } finally {
+                st.close();
+            }
+        } catch (SQLException e) {
+            broken = !isAlive(p.con);
+            throw e;
+        } finally {
+            pool.release(p, broken);
+        }
+    }
+
+    private static int conta(java.sql.Statement st, String sql) throws SQLException {
+        ResultSet rs = st.executeQuery(sql);
+        try {
+            rs.next();
+            return rs.getInt(1);
+        } finally {
+            rs.close();
+        }
+    }
+
+    /** Comandos do script ddl/nst_dispositivo_acesso.sql (sem comentários, separados por ";"). */
+    private static java.util.List<String> ddlAcesso() throws IOException {
+        java.io.InputStream in = ApiServlet.class.getResourceAsStream("/ddl/nst_dispositivo_acesso.sql");
+        if (in == null) throw new IOException("Script da tabela de dispositivos não encontrado no WAR");
+        StringBuilder sb = new StringBuilder();
+        java.io.BufferedReader r = new java.io.BufferedReader(new java.io.InputStreamReader(in, StandardCharsets.UTF_8));
+        try {
+            String linha;
+            while ((linha = r.readLine()) != null) {
+                if (!linha.trim().startsWith("--")) sb.append(linha).append('\n');
+            }
+        } finally {
+            r.close();
+        }
+        java.util.List<String> cmds = new java.util.ArrayList<String>();
+        for (String c : sb.toString().split(";\\s*\n")) {
+            if (!c.trim().isEmpty()) cmds.add(c.trim());
+        }
+        return cmds;
     }
 
     private void listQueries(HttpServletResponse resp) throws IOException {

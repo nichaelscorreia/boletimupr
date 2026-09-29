@@ -26,7 +26,13 @@
       <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>
-    <!-- O driver Oracle (ojdbc6.jar) fica em src/main/webapp/WEB-INF/lib e vai dentro do WAR -->
+    <!-- Driver Oracle atual (19c, Java 8+): compatível com Oracle 11.2 a 23ai e com criptografia de rede.
+         O ojdbc6 antigo não conecta no Oracle da Impacto ("IOException: InvocationTargetException"). -->
+    <dependency>
+      <groupId>com.oracle.database.jdbc</groupId>
+      <artifactId>ojdbc8</artifactId>
+      <version>19.24.0.0</version>
+    </dependency>
   </dependencies>
 
   <build>
