@@ -84,7 +84,7 @@ const Acesso = {
     const el = this.overlay();
     const cabecalho = `
       <img src="LogoNSTECH.png" alt="NSTECH" class="acesso-logo" />
-      <h1>Boletim Online de Moagem</h1>`;
+      <h1>Boletim Online de Moagem Impacto Bioenergia</h1>`;
 
     if (st.status === 'nao_identificado') {
       el.innerHTML = `

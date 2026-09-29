@@ -97,6 +97,8 @@ final class ConnectionPool {
             // Mesmas configurações de sessão usadas pelo OracleBridge original
             st.execute("alter session set nls_date_format='dd/mm/rrrr'");
             st.execute("alter session set NLS_NUMERIC_CHARACTERS = '. '");
+            // O Oracle da Impacto está em inglês: nomes de mês ("Month") em português
+            st.execute("alter session set NLS_DATE_LANGUAGE = 'BRAZILIAN PORTUGUESE'");
         } catch (SQLException e) {
             closeQuietly(con);
             throw e;
