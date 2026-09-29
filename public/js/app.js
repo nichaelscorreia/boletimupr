@@ -21,6 +21,15 @@ const App = {
     // O painel já abre com a rotação automática ligada (o botão continua pausando/retomando)
     if (!TVController.isActive) TVController.toggle();
 
+    // Layout compacto de tela cheia (botão de ampliar ou F11)
+    document.addEventListener('fullscreenchange', () => this.atualizarTelaCheia());
+    window.addEventListener('resize', () => this.atualizarTelaCheia());
+    this.atualizarTelaCheia();
+
+    // Faixa superior do modo TV com dados reais
+    this.atualizarTicker();
+    setInterval(() => this.atualizarTicker(), 60000);
+
     // Atualização periódica dos dados a cada 90 segundos
     this.refreshInterval = setInterval(() => {
       this.refreshCurrentView();
@@ -80,6 +89,43 @@ const App = {
         setTimeout(() => nav.scrollTo({ left: 0, behavior: 'smooth' }), 700);
       }, 1200);
       try { localStorage.setItem('navHintSeen', '1'); } catch (e) { /* storage indisponível */ }
+    }
+  },
+
+  // Tela cheia pela API do navegador (botão) ou pelo F11 (janela do tamanho da tela), só em telas grandes
+  atualizarTelaCheia() {
+    const porApi = !!document.fullscreenElement;
+    const porF11 = window.innerHeight >= screen.height - 2 && window.innerWidth >= screen.width - 2;
+    document.body.classList.toggle('tela-cheia', (porApi || porF11) && window.innerWidth > 1024);
+  },
+
+  async atualizarTicker() {
+    let d;
+    try {
+      const res = await fetch('/api/painel/ticker');
+      if (!res.ok) return;
+      d = await res.json();
+    } catch (e) {
+      return; // mantém o último valor exibido
+    }
+    const fmt = (v, dec) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+    if (d.moendas) {
+      set('ticker-moendas', d.moendas.map(m => {
+        const classe = m.cor === 'emerald' ? 'ticker-rodando' : m.cor === 'slate' ? 'ticker-entresafra' : 'ticker-parada';
+        const letra = esc(m.nome.replace('Moenda ', ''));
+        const motivo = m.cor === 'rose' && m.motivo ? ` (${esc(m.motivo.length > 40 ? m.motivo.slice(0, 40) + '…' : m.motivo)})` : '';
+        return `${letra}: <span class="${classe}">${esc(m.status)}</span>${motivo}`;
+      }).join(' · '));
+    }
+    set('ticker-moagem', d.moagemHoraHoje === null ? '—' : `${fmt(d.moagemHoraHoje, 0)} t/h`);
+    if (d.mecanizada) {
+      const partes = [];
+      if (d.mecanizada.safra !== null) partes.push(`${fmt(d.mecanizada.safra, 1)}% na safra`);
+      if (d.mecanizada.hoje !== null) partes.push(`${fmt(d.mecanizada.hoje, 1)}% hoje`);
+      set('ticker-mecanizada', partes.join(' · ') || '—');
     }
   },
 

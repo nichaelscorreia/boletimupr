@@ -96,6 +96,7 @@ final class QueryRegistry {
         simple("industria.graficoSafraComparativo", "Entrada de cana por mês: safra atual x anterior", true, safra);
         simple("industria.graficoProducaoMensal", "Produção mensal (açúcar, álcool) atual x anterior", true, safra);
         simple("industria.paradasRecentes", "Paradas das moendas nos últimos 15 dias", true);
+        simple("industria.paradasPorCausa", "Minutos parados por causa em cada moenda: hoje, ontem e safra", true, inicioSafra);
 
         // --- PRODUÇÃO ---
         simple("producao.historicoDiario", "Histórico diário de produção", true, safra);

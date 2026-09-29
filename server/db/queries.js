@@ -48,7 +48,9 @@ module.exports = {
     // Gráfico Produção Mensal (Açúcar, Anidro, Hidratado)
     graficoProducaoMensal: (safra = 54) => q('industria.graficoProducaoMensal', { safra }),
     // Paradas Recentes (Query do mobile_Industria_paradas.jsp)
-    paradasRecentes: () => q('industria.paradasRecentes')
+    paradasRecentes: () => q('industria.paradasRecentes'),
+    // Minutos parados por causa em cada moenda: hoje, ontem e safra
+    paradasPorCausa: () => q('industria.paradasPorCausa', comInicio({}))
   },
 
   // --- MÓDULO PRODUÇÃO DIÁRIA & HORÁRIA ---

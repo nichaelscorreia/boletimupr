@@ -275,11 +275,18 @@ const AgricolaView = {
         </div>
       </div>
 
+      <!-- TELA CHEIA: páginas do carrossel dos resumos (o TOTAL fica fixo) -->
+      <div class="resumos-paginas" role="tablist" aria-label="Resumos em rotação">
+        ${this.paginasResumo.map((p, i) => `
+          <button type="button" class="resumos-pagina" data-pagina="${i + 1}" onclick="AgricolaView.irParaPagina(${i + 1})">${p}</button>
+        `).join('')}
+      </div>
+
       <!-- GRID DOS RESUMOS EM 3 COLUNAS -->
-      <div class="dashboard-resumos-grid">
-        
+      <div class="dashboard-resumos-grid" data-pagina-ativa="${this.paginaAtiva}">
+
         <!-- RESUMO TOTAL -->
-        <div class="section-card" style="margin-bottom: 0; padding: 0.85rem;">
+        <div class="section-card" data-resumo="total" style="margin-bottom: 0; padding: 0.85rem;">
           <div class="section-header" style="margin-bottom: 0.5rem; padding-bottom: 0.4rem;">
             <div class="section-title" style="font-size: 0.88rem; color: var(--color-total);">
               <span>Resumo de Entrada de Cana <b>TOTAL</b></span>
@@ -325,7 +332,7 @@ const AgricolaView = {
         </div>
 
         <!-- RESUMO PRÓPRIA -->
-        <div class="section-card" style="margin-bottom: 0; padding: 0.85rem;">
+        <div class="section-card" data-resumo="propria" data-pagina="1" style="margin-bottom: 0; padding: 0.85rem;">
           <div class="section-header" style="margin-bottom: 0.5rem; padding-bottom: 0.4rem;">
             <div class="section-title" style="font-size: 0.88rem; color: var(--color-propria);">
               <span>Resumo de Entrada de Cana <b>PRÓPRIA</b></span>
@@ -369,7 +376,7 @@ const AgricolaView = {
         </div>
 
         <!-- RESUMO FORNECEDOR -->
-        <div class="section-card" style="margin-bottom: 0; padding: 0.85rem;">
+        <div class="section-card" data-resumo="fornecedor" data-pagina="1" style="margin-bottom: 0; padding: 0.85rem;">
           <div class="section-header" style="margin-bottom: 0.5rem; padding-bottom: 0.4rem;">
             <div class="section-title" style="font-size: 0.88rem; color: var(--color-fornecedor);">
               <span>Resumo de Entrada de Cana <b>FORNECEDOR</b></span>
@@ -412,7 +419,7 @@ const AgricolaView = {
           </div>
         </div>
         <!-- RESUMO COLHEDORA -->
-        <div class="section-card" style="margin-bottom: 0; padding: 0.85rem;">
+        <div class="section-card" data-resumo="colhedora" data-pagina="2" style="margin-bottom: 0; padding: 0.85rem;">
           <div class="section-header" style="margin-bottom: 0.5rem; padding-bottom: 0.4rem;">
             <div class="section-title" style="font-size: 0.88rem; color: var(--color-colhedora);">
               <span>Resumo de Cana de <b>COLHEDORA</b></span>
@@ -455,7 +462,7 @@ const AgricolaView = {
         </div>
 
         <!-- RESUMO CORTE MANUAL -->
-        <div class="section-card" style="margin-bottom: 0; padding: 0.85rem;">
+        <div class="section-card" data-resumo="manual" data-pagina="2" style="margin-bottom: 0; padding: 0.85rem;">
           <div class="section-header" style="margin-bottom: 0.5rem; padding-bottom: 0.4rem;">
             <div class="section-title" style="font-size: 0.88rem; color: var(--color-manual);">
               <span>Resumo de Cana de <b>CORTE MANUAL</b></span>
@@ -498,7 +505,7 @@ const AgricolaView = {
         </div>
 
         <!-- RESUMO MENSAL -->
-        <div class="section-card" style="margin-bottom: 0; padding: 0.85rem;">
+        <div class="section-card" data-resumo="mensal" data-pagina="3" style="margin-bottom: 0; padding: 0.85rem;">
           <div class="section-header" style="margin-bottom: 0.5rem; padding-bottom: 0.4rem;">
             <div class="section-title" style="font-size: 0.88rem; color: var(--color-mensal);">
               <span>Resumo de Cana <b>MENSAL</b></span>
@@ -542,6 +549,43 @@ const AgricolaView = {
     `;
 
     container.innerHTML = html;
+    this.marcarPaginaAtiva();
+    this.iniciarCarrossel();
+  },
+
+  // --- TELA CHEIA: carrossel dos resumos (Própria/Fornecedor -> Mecanizada/Manual -> Mensal) ---------
+
+  paginasResumo: ['Própria · Fornecedor', 'Mecanizada · Manual', 'Resumo Mensal'],
+  paginaAtiva: 1,
+  carrosselTimer: null,
+  CARROSSEL_SEGUNDOS: 15,
+
+  iniciarCarrossel() {
+    clearInterval(this.carrosselTimer);
+    this.carrosselTimer = setInterval(() => {
+      // Só gira na tela cheia, com a aba Agrícola visível e sem detalhamento aberto
+      if (!document.body.classList.contains('tela-cheia') || App.currentTab !== 'agricola' || Modal.isOpen()) return;
+      this.irParaPagina((this.paginaAtiva % this.paginasResumo.length) + 1);
+    }, this.CARROSSEL_SEGUNDOS * 1000);
+  },
+
+  irParaPagina(n) {
+    const grid = document.querySelector('.dashboard-resumos-grid');
+    if (!grid || n === this.paginaAtiva) return;
+    this.paginaAtiva = n;
+    // Esmaece a página atual e mostra a próxima
+    grid.classList.add('saindo');
+    setTimeout(() => {
+      grid.setAttribute('data-pagina-ativa', String(n));
+      grid.classList.remove('saindo');
+      this.marcarPaginaAtiva();
+    }, 400);
+    this.iniciarCarrossel(); // recomeça a contagem após troca manual
+  },
+
+  marcarPaginaAtiva() {
+    document.querySelectorAll('.resumos-pagina').forEach(b =>
+      b.classList.toggle('ativa', Number(b.dataset.pagina) === this.paginaAtiva));
   },
 
   renderTabelaFornecedores(lista = []) {

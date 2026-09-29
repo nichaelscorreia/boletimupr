@@ -27,16 +27,51 @@ body.tv-mode .tv-ticker-bar {
   display: flex;
   align-items: center;
   gap: 2rem;
+  min-width: 0;
 }
 
 .tv-ticker-item {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Motivo de parada longo não quebra a faixa em duas linhas */
+#ticker-moendas {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 48vw;
+}
+
+/* Fundo da faixa é sempre escuro: cores fixas para ter contraste também no tema claro */
+.tv-ticker-item span {
+  color: #cbd5e1;
 }
 
 .tv-ticker-item b {
-  color: var(--text-light);
+  color: #ffffff;
+}
+
+.tv-ticker-item .ticker-rodando { color: #34d399; }
+.tv-ticker-item .ticker-parada { color: #fb7185; }
+.tv-ticker-item .ticker-entresafra { color: #94a3b8; }
+
+.tv-ticker-selo {
+  font-size: 0.75rem;
+  color: #34d399;
+  white-space: nowrap;
+}
+
+@media (max-width: 1500px) {
+  .tv-ticker-items { gap: 1.25rem; }
+  .tv-ticker-selo { display: none; }
+}
+
+/* No celular a faixa ocuparia boa parte da tela; as mesmas informações estão na aba Indústria */
+@media (max-width: 768px) {
+  body.tv-mode .tv-ticker-bar { display: none; }
 }
 
 /* Barra de Progresso Linear da Rotação de TV */
@@ -56,6 +91,103 @@ body.tv-mode .tv-ticker-bar {
   background: linear-gradient(90deg, var(--accent-emerald), var(--accent-cyan));
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
   transition: width 0.1s linear;
+}
+
+/* ==========================================================================
+   TELA CHEIA (botão de ampliar ou F11): aba Agrícola cabe inteira na tela
+   body.tela-cheia é ligado pelo App.atualizarTelaCheia() em telas grandes
+   ========================================================================== */
+
+/* Barra de páginas do carrossel: só existe na tela cheia */
+.resumos-paginas { display: none; }
+
+body.tela-cheia .app-header { padding: 0.35rem 1.25rem; }
+body.tela-cheia .header-top { margin-bottom: 0.2rem; }
+body.tela-cheia .main-content { padding-top: 0.5rem; padding-bottom: 0.75rem; }
+
+/* Cards de planejamento e faixa de TCH mais compactos (os 6 cards sempre numa linha só) */
+body.tela-cheia .plan-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.6rem; margin-bottom: 0.5rem; }
+body.tela-cheia .plan-card { padding: 0.55rem 0.75rem; gap: 0.2rem; }
+body.tela-cheia .plan-pct { margin-top: 0.1rem; }
+body.tela-cheia .plan-nota { margin-top: 0.05rem; }
+body.tela-cheia .agricola-kpi-container { gap: 0.5rem; }
+body.tela-cheia .section-card:has(.agricola-kpi-container) { padding: 0.4rem 0.75rem !important; margin-bottom: 0.5rem; }
+
+body.tela-cheia .resumos-paginas {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin: 0 0 0.4rem;
+}
+
+.resumos-pagina {
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 0.15rem 0.7rem;
+  cursor: pointer;
+}
+
+.resumos-pagina.ativa { color: #fff; background: #059669; border-color: #059669; }
+
+/* Grade: TOTAL fixo na 1ª coluna; as outras duas colunas alternam por página */
+body.tela-cheia .dashboard-resumos-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0;
+}
+
+body.tela-cheia .dashboard-resumos-grid > [data-resumo="total"] { grid-column: 1; grid-row: 1; }
+body.tela-cheia .dashboard-resumos-grid > [data-pagina] { display: none; grid-row: 1; transition: opacity 0.4s ease; }
+body.tela-cheia .dashboard-resumos-grid > [data-resumo="propria"],
+body.tela-cheia .dashboard-resumos-grid > [data-resumo="colhedora"] { grid-column: 2; }
+body.tela-cheia .dashboard-resumos-grid > [data-resumo="fornecedor"],
+body.tela-cheia .dashboard-resumos-grid > [data-resumo="manual"] { grid-column: 3; }
+body.tela-cheia .dashboard-resumos-grid > [data-resumo="mensal"] { grid-column: 2 / span 2; }
+
+body.tela-cheia .dashboard-resumos-grid[data-pagina-ativa="1"] > [data-pagina="1"],
+body.tela-cheia .dashboard-resumos-grid[data-pagina-ativa="2"] > [data-pagina="2"],
+body.tela-cheia .dashboard-resumos-grid[data-pagina-ativa="3"] > [data-pagina="3"] {
+  display: block;
+  animation: resumoSurgir 0.6s ease;
+}
+
+body.tela-cheia .dashboard-resumos-grid.saindo > [data-pagina] { opacity: 0; }
+
+@keyframes resumoSurgir {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Tabelas dos resumos com menos espaço entre linhas */
+body.tela-cheia .dashboard-resumos-grid .section-card { padding: 0.55rem 0.7rem !important; }
+body.tela-cheia .dashboard-resumos-grid .section-header { margin-bottom: 0.3rem !important; padding-bottom: 0.25rem !important; }
+body.tela-cheia .dashboard-resumos-grid .data-table th,
+body.tela-cheia .dashboard-resumos-grid .data-table td {
+  font-size: 0.95rem !important;
+  padding: 0.28rem 0.35rem !important;
+}
+
+/* Monitores menores (ex.: notebook 1366x768): tabelas e cabeçalho ainda mais enxutos */
+@media (max-width: 1500px) {
+  body.tela-cheia .brand-subtitle { display: none; }
+  body.tela-cheia .plan-card { padding: 0.45rem 0.65rem; gap: 0.1rem; }
+  body.tela-cheia .plan-linha { font-size: 0.7rem; }
+  body.tela-cheia .section-card:has(.agricola-kpi-container) { padding: 0.3rem 0.75rem !important; }
+  body.tela-cheia .dashboard-resumos-grid .data-table th,
+  body.tela-cheia .dashboard-resumos-grid .data-table td {
+    font-size: 0.74rem !important;
+    padding: 0.22rem 0.3rem !important;
+  }
+}
+
+/* Telas baixas (ex.: 1280x720): sem o rodapé dos cards de planejamento */
+@media (max-height: 740px) {
+  body.tela-cheia .plan-nota { display: none; }
 }
 
 /* Animação de Troca de Slide */
