@@ -18,15 +18,15 @@ from (
         and rownum <= 12) a,
        (select to_char(datahora,'mm') mes, cod_safra, valor
         from laboratorio.resultado
-        where cod_grupoempresa = 1 and cod_empresa = 20 and cod_filial = 1
+        where cod_grupoempresa = 2 and cod_empresa = 1 and cod_filial = 1
         and   cod_safra in (:safra, :safraAnt) and codigo_objeto = 90 and nome_variavel = 'PROD_EQ') b,
        (select to_char(datahora,'mm') mes, cod_safra, valor
         from laboratorio.resultado
-        where cod_grupoempresa = 1 and cod_empresa = 20 and cod_filial = 1
+        where cod_grupoempresa = 2 and cod_empresa = 1 and cod_filial = 1
         and   cod_safra in (:safra, :safraAnt) and codigo_objeto = 47 and nome_variavel = 'ET_PR') c,
        (select to_char(datahora,'mm') mes, cod_safra, valor
         from laboratorio.resultado
-        where cod_grupoempresa = 1 and cod_empresa = 20 and cod_filial = 1
+        where cod_grupoempresa = 2 and cod_empresa = 1 and cod_filial = 1
         and   cod_safra in (:safra, :safraAnt) and codigo_objeto = 23 and nome_variavel = 'SAP_VH') d
   where a.mes = b.mes (+)
   and   a.mes = c.mes (+)

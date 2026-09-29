@@ -23,8 +23,8 @@ from (select a.codigo_objeto, a.cod_causa, trim(b.descricao) causa, trunc(a.data
                - (to_number(substr(a.horaini, 1, 2)) * 60 + to_number(substr(a.horaini, 4, 2)))) minutos
       from laboratorio.ocorrencia a,
            laboratorio.causas b
-      where a.cod_grupoempresa = 1
-      and   a.cod_empresa      = 20
+      where a.cod_grupoempresa = 2
+      and   a.cod_empresa      = 1
       and   a.cod_filial       = 1
       and   a.codigo_objeto in (3, 355)
       and   a.cod_causa       != 69

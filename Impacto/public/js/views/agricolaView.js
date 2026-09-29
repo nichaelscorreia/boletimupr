@@ -1,5 +1,5 @@
 // View do Módulo Agrícola (Boletim Online de Moagem 2.0)
-// Exibe dados 100% reais do banco Oracle (Safra 54) com drilldown interativo
+// Exibe dados 100% reais do banco Oracle (safra atual) com drilldown interativo
 
 const AgricolaView = {
   currentData: null,

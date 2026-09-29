@@ -18,8 +18,8 @@ from (
          automotivo.equipamento c,
          automotivo.historico_tipoequipamento d,
          automotivo.tipoequipamento e
-    where a.cod_grupoempresa = 1
-    and   a.cod_empresa      = 20
+    where a.cod_grupoempresa = 2
+    and   a.cod_empresa      = 1
     and   a.cod_filial       = 1
     and   a.cod_safra        = :safra
     and   a.cod_grupoempresa = b.cod_grupoempresa
@@ -35,8 +35,8 @@ from (
     group by d.cod_tipoequipamento, e.descricaotipoequipamento, a.cod_equipamento
   ) a, posto.abastecimento b
   where a.cod_equipamento      = b.cod_equipamento (+)
-  and   b.cod_grupoempresa (+) = 1
-  and   b.cod_empresa      (+) = 20
+  and   b.cod_grupoempresa (+) = 2
+  and   b.cod_empresa      (+) = 1
   and   b.cod_filial       (+) = 1
   and   b.data (+) between trunc(sysdate)-7 and trunc(sysdate)
   group by a.tipo, a.cod_tipoequipamento, a.descricaotipoequipamento,

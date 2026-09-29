@@ -9,7 +9,7 @@ const LaboratorioView = {
     container.innerHTML = `
       <div style="text-align: center; padding: 4rem 1rem; color: var(--text-secondary);">
         <div class="live-dot" style="margin: 0 auto 1rem; width: 14px; height: 14px;"></div>
-        <p>Carregando indicadores laboratoriais e industriais em tempo real (Safra 54)...</p>
+        <p>Carregando indicadores laboratoriais e industriais em tempo real...</p>
       </div>
     `;
 

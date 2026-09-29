@@ -24,7 +24,7 @@ from (select a.codigo_objeto, a.cod_causa, trim(b.descricao) causa, trunc(a.data
       from laboratorio.ocorrencia a,
            laboratorio.causas b
       where a.cod_grupoempresa = 1
-      and   a.cod_empresa      = 20
+      and   a.cod_empresa      = 1
       and   a.cod_filial       = 1
       and   a.codigo_objeto in (3, 355)
       and   a.cod_causa       != 69

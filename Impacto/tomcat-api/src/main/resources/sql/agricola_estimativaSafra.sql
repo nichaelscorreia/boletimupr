@@ -21,8 +21,8 @@ from (select sum(a.toneladas_estimadas) toneladas_estimadas,
              sum(b.pesoliquido) / ( (sysdate - (trunc(sysdate)-7)) * 24) media_hora
       from agricola.entradacana a,
            agricola.itensentradacana b
-      where a.cod_grupoempresa = 1
-      and   a.cod_empresa      = 20
+      where a.cod_grupoempresa = 2
+      and   a.cod_empresa      = 1
       and   a.cod_filial       = 1
       and   a.cod_safra        = :safra
       and   a.cod_grupoempresa = b.cod_grupoempresa
@@ -38,8 +38,8 @@ from (select sum(a.toneladas_estimadas) toneladas_estimadas,
       from agricola.entradacana a,
            agricola.itensentradacana b,
            agricola.historico_fazenda c
-      where a.cod_grupoempresa = 1
-      and   a.cod_empresa      = 20
+      where a.cod_grupoempresa = 2
+      and   a.cod_empresa      = 1
       and   a.cod_filial       = 1
       and   a.cod_safra        = :safra
       and   a.cod_grupoempresa = b.cod_grupoempresa

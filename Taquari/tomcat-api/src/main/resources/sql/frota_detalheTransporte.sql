@@ -10,7 +10,7 @@ from agricola.entradacana a,
      automotivo.historico_tipoequipamento d,
      automotivo.tipoequipamento e
 where a.cod_grupoempresa = 1
-and   a.cod_empresa      = 20
+and   a.cod_empresa      = 1
 and   a.cod_filial       = 1
 and   a.cod_safra        = :safra
 and   a.cod_grupoempresa = b.cod_grupoempresa

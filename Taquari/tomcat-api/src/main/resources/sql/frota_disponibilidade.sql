@@ -7,7 +7,7 @@ select d.cod_tipoequipamento, e.descricaotipoequipamento, c.cod_equipamento, sub
       (SELECT COUNT(*)
        FROM AGRICOLA.ENTRADACANA AA, AGRICOLA.ITENSENTRADACANA BB
        WHERE AA.COD_GRUPOEMPRESA   = 1
-       AND   AA.COD_EMPRESA        = 20
+       AND   AA.COD_EMPRESA        = 1
        AND   AA.COD_FILIAL         = 1
        AND   AA.COD_SAFRA          = :safra
        AND   AA.COD_EQUIPAMENTO    = c.COD_EQUIPAMENTO
@@ -22,14 +22,14 @@ select d.cod_tipoequipamento, e.descricaotipoequipamento, c.cod_equipamento, sub
       (select nvl(max(aa.numero_ordemservico),0)
        from automotivo.ordemservico aa
        where aa.cod_grupoempresa = 1
-       and   aa.cod_empresa      = 20
+       and   aa.cod_empresa      = 1
        and   aa.cod_filial       = 1
        and   aa.dtencerramento is null
        and   aa.cod_equipamento  = c.cod_equipamento) ordemservico,
       (select nvl(max(aa.numero_ordemservico),0)
        from automotivo.ordemservico aa
        where aa.cod_grupoempresa = 1
-       and   aa.cod_empresa      = 20
+       and   aa.cod_empresa      = 1
        and   aa.cod_filial       = 1
        and   nvl(aa.cod_planoprevencao,0) > 0
        and   aa.dtencerramento is null
@@ -37,7 +37,7 @@ select d.cod_tipoequipamento, e.descricaotipoequipamento, c.cod_equipamento, sub
       (select to_char(aa.dtabertura,'dd/mm/rrrr hh24:mi')
        from automotivo.ordemservico aa
        where aa.cod_grupoempresa = 1
-       and   aa.cod_empresa      = 20
+       and   aa.cod_empresa      = 1
        and   aa.cod_filial       = 1
        and   aa.dtencerramento is null
        and   aa.cod_equipamento  = c.cod_equipamento) OFICINA
@@ -56,14 +56,14 @@ and   e.cod_tipoequipamento in (5, 6, 7, 12, 13, 9, 11, 19, 20)
 and   c.cod_equipamento in (select aa.cod_equipamento
                             from agricola.itensentradacana aa
                             where aa.cod_grupoempresa = 1
-                            and   aa.cod_empresa      = 20
+                            and   aa.cod_empresa      = 1
                             and   aa.cod_filial       = 1
                             and   aa.cod_safra        = :safra
                             union
                             select bb.cod_equipamento
                             from agricola.itensentradacana_equip bb
                             where bb.cod_grupoempresa = 1
-                            and   bb.cod_empresa      = 20
+                            and   bb.cod_empresa      = 1
                             and   bb.cod_filial       = 1
                             and   bb.cod_safra        = :safra
                             union

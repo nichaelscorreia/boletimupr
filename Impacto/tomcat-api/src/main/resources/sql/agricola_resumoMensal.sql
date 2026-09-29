@@ -17,8 +17,8 @@ FROM agricola.entradacana ec,
      agricola.tipocana tc,
      agricola.historico_fazenda hf,
      agricola.tipofazenda tf
-WHERE s.cod_grupoempresa = 1
-AND   s.cod_empresa = 20
+WHERE s.cod_grupoempresa = 2
+AND   s.cod_empresa = 1
 AND   s.cod_filial = 1
 AND   s.cod_safra = :safra
 AND   ec.cod_grupoempresa = s.cod_grupoempresa
@@ -70,8 +70,8 @@ FROM agricola.entradacana ec,
      agricola.tipocana tc,
      agricola.historico_fazenda hf,
      agricola.tipofazenda tf
-WHERE s.cod_grupoempresa = 1
-AND   s.cod_empresa = 20
+WHERE s.cod_grupoempresa = 2
+AND   s.cod_empresa = 1
 AND   s.cod_filial = 1
 AND   s.cod_safra = :safra
 AND   ec.cod_grupoempresa = s.cod_grupoempresa

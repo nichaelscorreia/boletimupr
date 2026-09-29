@@ -19,8 +19,8 @@ select a.numero, a.codigo_objeto, a.nome_variavel, a.descricao descricao_boletim
                                                and   bb.cod_safra        = :safra
                                                and   bb.datahora between trunc(sysdate)-1 and trunc(sysdate)-1 + 0.99999) end valor
 from laboratorio.linha a, laboratorio.variavel b
-where a.cod_grupoempresa = 1
-and   a.cod_empresa      = 20
+where a.cod_grupoempresa = 2
+and   a.cod_empresa      = 1
 and   a.cod_filial       = 1
 and   a.cod_relatorio    = 21
 and   a.cod_grupoempresa = b.cod_grupoempresa

@@ -4,8 +4,8 @@ select to_char(ec.datamovimento,'mm') anomes,
        sum(decode(ec.cod_safra, :safraAnt, iec.pesoliquido, 0)) safant
 FROM agricola.entradacana ec,
      agricola.itensentradacana iec
-WHERE ec.cod_grupoempresa = 1
-AND   ec.cod_empresa      = 20
+WHERE ec.cod_grupoempresa = 2
+AND   ec.cod_empresa      = 1
 AND   ec.cod_filial       = 1
 AND   ec.cod_safra in (:safra, :safraAnt)
 AND   iec.cod_grupoempresa = ec.cod_grupoempresa

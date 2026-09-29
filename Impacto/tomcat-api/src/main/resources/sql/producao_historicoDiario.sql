@@ -5,8 +5,8 @@ SELECT to_char(trunc(ec.datamovimento),'dd/mm/rrrr') datmov,
        else 0 end estimativa,
       (SELECT to_number(replace(B.VALOR,',','.')) valor
        FROM LABORATORIO.RESULTADO B
-       WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       WHERE B.COD_GRUPOEMPRESA = 2
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 2
@@ -14,8 +14,8 @@ SELECT to_char(trunc(ec.datamovimento),'dd/mm/rrrr') datmov,
        AND   B.NOME_VARIAVEL    = 'MOI_CA') CANA_MOIDA,
       (SELECT to_number(replace(B.VALOR,',','.')) valor
        FROM LABORATORIO.RESULTADO B
-       WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       WHERE B.COD_GRUPOEMPRESA = 2
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   TRUNC(B.DATAHORA)  = ec.datamovimento
@@ -29,8 +29,8 @@ SELECT to_char(trunc(ec.datamovimento),'dd/mm/rrrr') datmov,
                     SUM(iec.qtdehorasposqueima * decode(upper(tc.imprime_posqueima),'S',1,0) * iec.pesoliquido )/SUM(iec.pesoliquido)),2),'900'))||'h' tq,
       (SELECT to_number(replace(B.VALOR,',','.')) valor
        FROM LABORATORIO.RESULTADO B
-       WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       WHERE B.COD_GRUPOEMPRESA = 2
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 90
@@ -38,8 +38,8 @@ SELECT to_char(trunc(ec.datamovimento),'dd/mm/rrrr') datmov,
        AND   B.NOME_VARIAVEL    = 'PROD_EQ') PRODUCAO_EQUIVALENTE,
       (SELECT to_number(replace(B.VALOR,',','.')) valor
        FROM LABORATORIO.RESULTADO B
-       WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       WHERE B.COD_GRUPOEMPRESA = 2
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 47
@@ -47,8 +47,8 @@ SELECT to_char(trunc(ec.datamovimento),'dd/mm/rrrr') datmov,
        AND   B.NOME_VARIAVEL    = 'ET_PR') PRODUCAO_HIDRATADO,
       (SELECT to_number(replace(B.VALOR,',','.')) valor
        FROM LABORATORIO.RESULTADO B
-       WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       WHERE B.COD_GRUPOEMPRESA = 2
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 47
@@ -56,8 +56,8 @@ SELECT to_char(trunc(ec.datamovimento),'dd/mm/rrrr') datmov,
        AND   B.NOME_VARIAVEL    = 'ETANPR') PRODUCAO_ANIDRO,
       (SELECT to_number(replace(B.VALOR,',','.')) valor
        FROM LABORATORIO.RESULTADO B
-       WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       WHERE B.COD_GRUPOEMPRESA = 2
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 23
@@ -69,8 +69,8 @@ FROM agricola.entradacana ec,
      agricola.safra s,
      agricola.ordem_corte_unica oc,
      agricola.tipocana tc
-WHERE s.cod_grupoempresa = 1
-AND   s.cod_empresa = 20
+WHERE s.cod_grupoempresa = 2
+AND   s.cod_empresa = 1
 AND   s.cod_filial = 1
 AND   s.cod_safra = :safra
 AND   ec.cod_grupoempresa = s.cod_grupoempresa

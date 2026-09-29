@@ -5,8 +5,11 @@ Cada usina tem o seu projeto completo e independente numa subpasta:
 | Pasta | Usina | Situação |
 |---|---|---|
 | [`UPR/`](UPR/) | Usina Porto Rico | Em produção |
-| [`Impacto/`](Impacto/) | Usina Impacto | Cópia da UPR, aguardando parâmetros |
-| [`Taquari/`](Taquari/) | Usina Taquari | Cópia da UPR, aguardando parâmetros |
+| [`Impacto/`](Impacto/) | Usina Impacto | Empresa (2/1/1) e safra 16 configuradas; aguardando implantação da API |
+| [`Taquari/`](Taquari/) | Usina Taquari | Empresa (1/1/1) e safra 19 configuradas; aguardando implantação da API |
+
+Filtro de empresa usado nos SQLs de cada usina (`cod_grupoempresa / cod_empresa / cod_filial`):
+UPR `1/20/1`, Impacto `2/1/1`, Taquari `1/1/1`.
 
 Cada pasta contém as duas partes do sistema:
 

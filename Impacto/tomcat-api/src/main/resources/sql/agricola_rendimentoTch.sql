@@ -3,8 +3,8 @@ select sum(a.tch_estimado * a.area_corte) / nullif(sum(a.area_corte),0) tch_prev
 from agricola.ordem_corte_unica a,
      agricola.historico_fazenda b,
      agricola.liberacao_corte c
-where a.cod_grupoempresa = 1
-and   a.cod_empresa      = 20
+where a.cod_grupoempresa = 2
+and   a.cod_empresa      = 1
 and   a.cod_filial       = 1
 and   a.cod_safra        = :safra
 and   a.data_encerramento is not null

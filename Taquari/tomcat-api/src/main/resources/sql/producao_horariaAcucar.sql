@@ -10,7 +10,7 @@ from (select rownum-1 hora, to_char(rownum-1,'00') || ' a ' || to_char(rownum,'0
                     and   aa.cod_safra = a.cod_safra and aa.codigo_objeto = a.codigo_objeto and aa.datahora = a.datahora
                     and   aa.cod_turno = a.cod_turno and aa.numerobatelada = a.numerobatelada and trim(aa.nome_variavel) = 'QTDE_VACUO') valor
             from laboratorio.resultado a
-            where a.cod_grupoempresa = 1 and a.cod_empresa = 20 and a.cod_filial = 1 and a.cod_safra = :safra
+            where a.cod_grupoempresa = 1 and a.cod_empresa = 1 and a.cod_filial = 1 and a.cod_safra = :safra
             and   a.codigo_objeto in (278, 279, 366) and trunc(a.datahora) = trunc(sysdate) and trim(a.nome_variavel) = 'HORA')
       group by hora) b,
      (select to_number(to_char(datahorasaida,'HH24')) hora, (sum(quantidade)*1000)/50 sacos, count(*) qtdcarros

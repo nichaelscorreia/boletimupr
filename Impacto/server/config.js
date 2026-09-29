@@ -2,7 +2,7 @@ require('dotenv').config();
 
 module.exports = {
   port: process.env.PORT || 3000,
-  safra: process.env.ORACLE_SAFRA || '54',
+  safra: process.env.ORACLE_SAFRA || '16',
   // Data de início da safra (dd/mm/aaaa). Vazio = padrão configurado no Tomcat.
   inicioSafra: process.env.SAFRA_INICIO || '',
   api: {

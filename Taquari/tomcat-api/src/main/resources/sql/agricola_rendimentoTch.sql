@@ -4,7 +4,7 @@ from agricola.ordem_corte_unica a,
      agricola.historico_fazenda b,
      agricola.liberacao_corte c
 where a.cod_grupoempresa = 1
-and   a.cod_empresa      = 20
+and   a.cod_empresa      = 1
 and   a.cod_filial       = 1
 and   a.cod_safra        = :safra
 and   a.data_encerramento is not null

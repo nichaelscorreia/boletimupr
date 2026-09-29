@@ -20,7 +20,7 @@ select case when b.cod_fornecedor = 4093 then 1
        FROM agricola.entradacana ec,
             agricola.itensentradacana iec
        WHERE ec.cod_grupoempresa = 1
-       AND   ec.cod_empresa = 20
+       AND   ec.cod_empresa = 1
        AND   ec.cod_filial = 1
        AND   ec.cod_safra = a.cod_safra
        AND   iec.cod_grupoempresa = ec.cod_grupoempresa

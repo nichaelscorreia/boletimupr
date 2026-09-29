@@ -5,7 +5,7 @@ const ProducaoView = {
     container.innerHTML = `
       <div style="text-align: center; padding: 4rem 1rem; color: var(--text-secondary);">
         <div class="live-dot" style="margin: 0 auto 1rem; width: 14px; height: 14px;"></div>
-        <p>Carregando histórico diário e produção horária em tempo real (Safra 54)...</p>
+        <p>Carregando histórico diário e produção horária em tempo real...</p>
       </div>
     `;
 
@@ -225,7 +225,7 @@ const ProducaoSemanalView = {
     container.innerHTML = `
       <div style="text-align: center; padding: 4rem 1rem; color: var(--text-secondary);">
         <div class="live-dot" style="margin: 0 auto 1rem; width: 14px; height: 14px;"></div>
-        <p>Carregando fechamentos semanais da Safra 54...</p>
+        <p>Carregando fechamentos semanais da safra...</p>
       </div>
     `;
 

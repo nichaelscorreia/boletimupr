@@ -5,7 +5,7 @@ from (select rownum-1 hora, to_char(rownum-1,'00') || ' a ' || to_char(rownum,'0
      (select to_number(substr(trim(a.valor),1,2)) hora,
              sum(to_number(replace(aa.valor,',','.'))) valor
       from laboratorio.resultado a, laboratorio.resultado aa
-      where a.cod_grupoempresa = 1 and a.cod_empresa = 20 and a.cod_filial = 1 and a.cod_safra = :safra
+      where a.cod_grupoempresa = 1 and a.cod_empresa = 1 and a.cod_filial = 1 and a.cod_safra = :safra
       and   a.codigo_objeto = 53 and trunc(a.datahora) = trunc(sysdate) and a.nome_variavel = 'HORA'
       and   aa.cod_grupoempresa = a.cod_grupoempresa and aa.cod_empresa = a.cod_empresa and aa.cod_filial = a.cod_filial
       and   aa.cod_safra = a.cod_safra and aa.codigo_objeto = a.codigo_objeto and aa.datahora = a.datahora

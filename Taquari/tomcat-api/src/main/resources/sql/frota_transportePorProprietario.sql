@@ -22,7 +22,7 @@ from (
          material.fornecedor g,
          rh.pessoa h
     where a.cod_grupoempresa = 1
-    and   a.cod_empresa      = 20
+    and   a.cod_empresa      = 1
     and   a.cod_filial       = 1
     and   a.cod_safra        = :safra
     and   a.cod_grupoempresa = b.cod_grupoempresa
@@ -55,7 +55,7 @@ from (
          automotivo.tipoequipamento e,
          automotivo.histproprietarioequip f
     where a.cod_grupoempresa = 1
-    and   a.cod_empresa      = 20
+    and   a.cod_empresa      = 1
     and   a.cod_filial       = 1
     and   a.cod_safra        = :safra
     and   a.cod_grupoempresa = b.cod_grupoempresa
@@ -74,7 +74,7 @@ from (
   ) a, posto.abastecimento b
   where a.cod_equipamento      = b.cod_equipamento (+)
   and   b.cod_grupoempresa (+) = 1
-  and   b.cod_empresa      (+) = 20
+  and   b.cod_empresa      (+) = 1
   and   b.cod_filial       (+) = 1
   and   b.data (+) between trunc(sysdate)-7 and trunc(sysdate)
   group by a.cod_fornecedor, a.nome, a.cod_equipamento, a.hoje, a.ontem, a.semana, a.safra

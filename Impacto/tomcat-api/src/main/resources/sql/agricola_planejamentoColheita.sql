@@ -19,8 +19,8 @@ select case when b.cod_fornecedor = 4093 then 1
       (select sum(iec.pesoliquido) pesliq
        FROM agricola.entradacana ec,
             agricola.itensentradacana iec
-       WHERE ec.cod_grupoempresa = 1
-       AND   ec.cod_empresa = 20
+       WHERE ec.cod_grupoempresa = 2
+       AND   ec.cod_empresa = 1
        AND   ec.cod_filial = 1
        AND   ec.cod_safra = a.cod_safra
        AND   iec.cod_grupoempresa = ec.cod_grupoempresa

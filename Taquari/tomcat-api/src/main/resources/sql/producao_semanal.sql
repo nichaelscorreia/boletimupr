@@ -3,7 +3,7 @@ SELECT p.sem, p.periodo, p.datini, p.datfin,
       (SELECT sum(to_number(replace(B.VALOR,',','.'))) valor
        FROM LABORATORIO.RESULTADO B
        WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 2
@@ -13,7 +13,7 @@ SELECT p.sem, p.periodo, p.datini, p.datfin,
                     (100 * case when trunc(sysdate) between p.datini and p.datfin then trunc(sysdate) - p.datini else 7 end) * 100,0) valor
        FROM LABORATORIO.RESULTADO B
        WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   TRUNC(B.DATAHORA) between p.datini and p.datfin
@@ -28,7 +28,7 @@ SELECT p.sem, p.periodo, p.datini, p.datfin,
       (SELECT sum(to_number(replace(B.VALOR,',','.'))) valor
        FROM LABORATORIO.RESULTADO B
        WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 90
@@ -37,7 +37,7 @@ SELECT p.sem, p.periodo, p.datini, p.datfin,
       (SELECT sum(to_number(replace(B.VALOR,',','.'))) valor
        FROM LABORATORIO.RESULTADO B
        WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 47
@@ -46,7 +46,7 @@ SELECT p.sem, p.periodo, p.datini, p.datfin,
       (SELECT sum(to_number(replace(B.VALOR,',','.'))) valor
        FROM LABORATORIO.RESULTADO B
        WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 47
@@ -55,7 +55,7 @@ SELECT p.sem, p.periodo, p.datini, p.datfin,
       (SELECT sum(to_number(replace(B.VALOR,',','.'))) valor
        FROM LABORATORIO.RESULTADO B
        WHERE B.COD_GRUPOEMPRESA = 1
-       AND   B.COD_EMPRESA      = 20
+       AND   B.COD_EMPRESA      = 1
        AND   B.COD_FILIAL       = 1
        AND   B.COD_SAFRA        = :safra
        AND   B.CODIGO_OBJETO    = 23
@@ -78,7 +78,7 @@ FROM agricola.entradacana ec,
      where dia = '2'
      and   datini <= trunc(sysdate)) p
 WHERE s.cod_grupoempresa = 1
-AND   s.cod_empresa = 20
+AND   s.cod_empresa = 1
 AND   s.cod_filial = 1
 AND   s.cod_safra = :safra
 AND   ec.cod_grupoempresa = s.cod_grupoempresa

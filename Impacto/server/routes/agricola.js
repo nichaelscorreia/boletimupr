@@ -15,7 +15,7 @@ function parseNum(val, decimals = 2) {
 // GET /api/agricola
 router.get('/', async (req, res) => {
   try {
-    const safra = 54;
+    const safra = config.safra;
     
     // Executar queries simultaneamente
     const [
@@ -289,7 +289,7 @@ router.get('/planejamento', async (req, res) => {
 // GET /api/agricola/detalhe - Busca drilldown dinâmico ao clicar numa linha
 router.get('/detalhe', async (req, res) => {
   try {
-    const safra = 54;
+    const safra = config.safra;
     const datini = req.query.datini || '19/09/2026';
     const datfin = req.query.datfin || '19/09/2026';
     const horini = parseInt(req.query.horini, 10) || 0;
