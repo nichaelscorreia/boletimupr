@@ -8,10 +8,10 @@
 //   foraPlano  = colhido - aderente       -> colhido além do planejado até hoje (lote adiantado ou fora do plano)
 //   saldo      = estimado - colhido
 //   % evolução    = colhido / estimado
-//   % cumprimento = aderente / planejado  (null quando não há planejamento até hoje)
+//   % cumprimento = colhido / planejado  (pode passar de 100%; null quando não há planejamento até hoje)
 //
-// O cumprimento usa min() por lote para que colher um lote não planejado não "compense" um lote planejado
-// que ficou para trás; esse volume aparece separado em foraPlano.
+// Como o cumprimento compara totais, colher lotes não planejados também soma; foraPlano mostra quanto
+// do colhido veio além do que estava programado para cada lote.
 
 const GRUPOS = [
   { id: 1, nome: 'Cana Própria' },
@@ -78,7 +78,7 @@ function metricas(lotes) {
     foraPlano: round(s.colhido - s.aderente, 3),
     saldo: round(s.estimado - s.colhido, 3),
     pctEvolucao: s.estimado > 0 ? round((s.colhido / s.estimado) * 100) : null,
-    pctCumprimento: s.planejado > 0 ? round((s.aderente / s.planejado) * 100) : null
+    pctCumprimento: s.planejado > 0 ? round((s.colhido / s.planejado) * 100) : null
   };
 }
 

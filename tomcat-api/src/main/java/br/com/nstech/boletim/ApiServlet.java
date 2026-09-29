@@ -209,7 +209,7 @@ public class ApiServlet extends HttpServlet {
             } else if ("inicioSafra".equals(s.name)) {
                 values.put(s.name, cfg.inicioSafraPadrao);
             } else {
-                values.put(s.name, null); // opcional sem padrão: vai como NULL
+                values.put(s.name, null); // opcional sem padrão: vai como NULL (builders devem testar o valor, não containsKey)
             }
         }
         if (values.containsKey("safra")) {

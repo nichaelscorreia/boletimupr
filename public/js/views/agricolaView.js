@@ -752,7 +752,7 @@ const AgricolaView = {
               <div class="plan-bar"><span style="width: ${Math.min(g.pctEvolucao || 0, 100)}%; background: ${cor};"></span></div>
             </div>
             <div class="plan-pct">
-              <div class="plan-pct-head"><span title="Parte do planejado até hoje que foi efetivamente colhida">Cumprimento plano</span><b class="${classe}">${this.pct(g.pctCumprimento)}</b></div>
+              <div class="plan-pct-head"><span title="Colhido ÷ planejado até hoje (pode passar de 100%)">Cumprimento plano</span><b class="${classe}">${this.pct(g.pctCumprimento)}</b></div>
               <div class="plan-bar"><span class="${classe}" style="width: ${Math.min(g.pctCumprimento || 0, 100)}%; background: currentColor;"></span></div>
             </div>
             <div class="plan-nota">${this.fmt(g.lotes, 0)} lotes · ${g.pctCumprimento === null
@@ -842,7 +842,7 @@ const AgricolaView = {
       <div class="plan-breadcrumb">${migalhas}</div>
       <div class="plan-nota" style="margin-bottom: 0.5rem;">
         Planejado = volume programado até hoje · Fora do plano = colhido além do programado para o lote ·
-        Evolução = colhido ÷ estimado · Cumprimento = parte do planejado efetivamente colhida ÷ planejado
+        Evolução = colhido ÷ estimado · Cumprimento = colhido ÷ planejado (acima de 100% = colheu mais que o planejado)
         ${isLote ? '' : ' · Clique em uma linha para detalhar'}
       </div>
       <div class="table-responsive" style="max-height: 62vh; overflow-y: auto;">

@@ -64,7 +64,7 @@ final class QueryRegistry {
         add(new Query("agricola.resumo", "Resumo completo da moagem (Hoje/Ontem/Safra/Turnos/Horas)", true,
             v -> {
                 String sql = sql("agricola_resumo");
-                if (v.containsKey("tipoCorte")) {
+                if (v.get("tipoCorte") != null) {
                     sql = PESO_POSITIVO.matcher(sql)
                         .replaceAll(Matcher.quoteReplacement("AND iec.pesoliquido > 0 AND oc.cod_tipocorte = :tipoCorte"));
                 }
@@ -113,7 +113,7 @@ final class QueryRegistry {
             v -> {
                 String sql = sql("C".equals(v.get("tipo")) ? "frota_detalheCarregamento" : "frota_detalheTransporte");
                 return sql.replace("{{FILTRO_CODIGO}}",
-                    v.containsKey("codigo") ? "and d.cod_tipoequipamento = :codigo" : "");
+                    v.get("codigo") != null ? "and d.cod_tipoequipamento = :codigo" : "");
             },
             safra,
             Spec.oneOf("tipo", "T = transporte, C = carregamento (padrão T)", "T", "C").orDefault("T"),

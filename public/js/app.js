@@ -18,6 +18,9 @@ const App = {
     this.switchTab('agricola');
     this.setupNavHint();
 
+    // O painel já abre com a rotação automática ligada (o botão continua pausando/retomando)
+    if (!TVController.isActive) TVController.toggle();
+
     // Atualização periódica dos dados a cada 90 segundos
     this.refreshInterval = setInterval(() => {
       this.refreshCurrentView();
