@@ -1,0 +1,516 @@
+/* ==========================================================================
+   BOLETIM ONLINE DE MOAGEM - DESIGN SYSTEM CORPORATIVO MODERNO
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Paleta Industrial Sucroalcooleira */
+  --bg-main: #0b0f19;
+  --bg-surface: #111827;
+  --bg-card: rgba(17, 24, 39, 0.75);
+  --bg-card-hover: rgba(31, 41, 55, 0.85);
+  --bg-glass: rgba(15, 23, 42, 0.65);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(16, 185, 129, 0.4);
+
+  /* Acentos de Cores */
+  --accent-emerald: #10b981; /* Verde Usina / Moagem Ativa */
+  --accent-emerald-glow: rgba(16, 185, 129, 0.25);
+  --accent-cyan: #06b6d4; /* Azul Agro / Irrigação */
+  --accent-amber: #f59e0b; /* Alerta / Safra */
+  --accent-amber-glow: rgba(245, 158, 11, 0.25);
+  --accent-rose: #f43f5e; /* Paradas / Crítico */
+  --accent-rose-glow: rgba(244, 63, 94, 0.25);
+  --accent-indigo: #6366f1; /* Corporativo */
+  --accent-purple: #8b5cf6;
+
+  /* Tipografia & Textos */
+  --text-main: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-light: #ffffff;
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Sombras & Efeitos */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.15);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Grid Colors - Dark */
+  --color-total: #38bdf8;
+  --color-propria: #34d399;
+  --color-fornecedor: #fbbf24;
+  --color-colhedora: #a78bfa;
+  --color-manual: #f472b6;
+  --color-mensal: #fcd34d;
+  --color-safra: #fef08a;
+  --color-atr: #38bdf8;
+  
+  --bg-table-header: rgba(15, 23, 42, 0.95);
+  --border-table: rgba(255, 255, 255, 0.04);
+  --bg-table-hover: rgba(255, 255, 255, 0.04);
+  --bg-table-striped: rgba(0, 0, 0, 0.35);
+
+  --bg-row-safra: rgba(245, 158, 11, 0.22);
+  --border-row-safra: #f59e0b;
+  --text-row-safra: #fef08a;
+}
+
+[data-theme="light"] {
+  --bg-main: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-card-hover: rgba(248, 250, 252, 0.95);
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --border-subtle: rgba(0, 0, 0, 0.1);
+  --border-focus: rgba(16, 185, 129, 0.6);
+
+  --text-main: #334155;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --text-light: #0f172a;
+  
+  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.1);
+
+  /* Grid Colors - Light */
+  --color-total: #0284c7;
+  --color-propria: #059669;
+  --color-fornecedor: #d97706;
+  --color-colhedora: #7c3aed;
+  --color-manual: #db2777;
+  --color-mensal: #ca8a04;
+  --color-safra: #b45309;
+  --color-atr: #0284c7;
+  
+  --bg-table-header: rgba(241, 245, 249, 0.95);
+  --border-table: rgba(0, 0, 0, 0.06);
+  --bg-table-hover: rgba(0, 0, 0, 0.03);
+  --bg-table-striped: rgba(241, 245, 249, 0.8);
+
+  --bg-row-safra: rgba(245, 158, 11, 0.15);
+  --border-row-safra: #d97706;
+  --text-row-safra: #92400e;
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(at 15% 15%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
+    radial-gradient(at 85% 85%, rgba(6, 182, 212, 0.04) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(99, 102, 241, 0.03) 0px, transparent 60%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  min-height: 100vh;
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Barra Superior Corporativa */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.6rem 1.25rem;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 0 15px var(--accent-emerald-glow);
+}
+
+.brand-logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+.brand-text h1 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand-text p {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.safra-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Indicadores de Topo & Ações */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 0.35rem 0.7rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent-emerald);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent-emerald);
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.clock-display {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn-icon {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-icon:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-light);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Menu de Navegação Horizontal */
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  gap: 0.4rem;
+  padding-top: 0.25rem;
+}
+
+.nav-container::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.nav-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nav-tab svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.7;
+}
+
+.nav-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-light);
+}
+
+.nav-tab.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2));
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.4);
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+}
+
+.nav-tab.active svg {
+  opacity: 1;
+  stroke: #34d399;
+}
+
+/* Setas de "tem mais menu" nas bordas (só aparecem quando há opções escondidas) */
+.nav-wrap {
+  position: relative;
+}
+
+.nav-hint {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0;
+  width: 2.4rem;
+  z-index: 2;
+  display: none;
+  align-items: center;
+  border: none;
+  padding: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent-emerald);
+  cursor: pointer;
+}
+
+.nav-hint-left {
+  left: 0;
+  justify-content: flex-start;
+  background: linear-gradient(90deg, var(--bg-surface) 45%, transparent);
+}
+
+.nav-hint-right {
+  right: 0;
+  justify-content: flex-end;
+  background: linear-gradient(270deg, var(--bg-surface) 45%, transparent);
+  animation: nav-hint-nudge 1.6s ease-in-out infinite;
+}
+
+.nav-wrap.can-left .nav-hint-left,
+.nav-wrap.can-right .nav-hint-right {
+  display: flex;
+}
+
+@keyframes nav-hint-nudge {
+  0%, 100% { padding-right: 0; }
+  50% { padding-right: 0.3rem; }
+}
+
+/* TV Auto-Rotate Controller Pill */
+.tv-control-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(31, 41, 55, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  color: #ffffff;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Tema claro: relógio e botão de rotação em "chip" escuro sólido para a fonte branca contrastar */
+[data-theme="light"] .clock-display,
+[data-theme="light"] .tv-control-pill {
+  background: #1f2937;
+  border-color: #1f2937;
+}
+
+[data-theme="light"] .tv-control-pill.active {
+  background: #047857;
+  border-color: #047857;
+  color: #ffffff;
+}
+
+.tv-control-pill.active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: var(--accent-emerald);
+}
+
+.tv-progress-circle {
+  width: 18px;
+  height: 18px;
+  position: relative;
+}
+
+.tv-progress-circle svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.tv-progress-circle circle {
+  fill: none;
+  stroke-width: 3;
+}
+
+.tv-progress-bg {
+  stroke: rgba(255, 255, 255, 0.1);
+}
+
+.tv-progress-bar {
+  stroke: var(--accent-emerald);
+  stroke-dasharray: 44;
+  stroke-dashoffset: 44;
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+/* Container Principal */
+.main-content {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 1.25rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Grid & Layout Utilities */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0.75rem;
+  }
+  .header-top {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .brand-text h1 {
+    font-size: 0.95rem;
+    white-space: normal;
+  }
+  .brand-subtitle {
+    font-size: 0.65rem;
+    white-space: normal;
+    margin-top: 0.1rem;
+  }
+  .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: space-between;
+  }
+  #btn-fullscreen {
+    display: none;
+  }
+  .main-content {
+    padding: 0.75rem;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}

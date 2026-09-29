@@ -1,7 +1,10 @@
+# Um serviço por usina; cada um publica a sua pasta (rootDir).
 services:
+  # --- Usina Porto Rico (UPR) ---
   - type: web
     name: boletim-online-moagem
     runtime: node
+    rootDir: UPR
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/status

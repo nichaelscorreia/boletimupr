@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boletim Online de Moagem | Gestão Agroindustrial</title>
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/tv-mode.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310b981'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+</head>
+<body>
+
+  <!-- BANNER TICKER INFORMATIVO (MODO TV) — preenchido por App.atualizarTicker() -->
+  <div class="tv-ticker-bar">
+    <div class="tv-ticker-items">
+      <div class="tv-ticker-item">
+        <span>🏭 Moendas:</span> <b id="ticker-moendas">…</b>
+      </div>
+      <div class="tv-ticker-item">
+        <span>⚙️ Moagem hoje:</span> <b id="ticker-moagem">…</b>
+      </div>
+      <div class="tv-ticker-item">
+        <span>🚜 Colheita Mecanizada:</span> <b id="ticker-mecanizada">…</b>
+      </div>
+    </div>
+    <div class="tv-ticker-selo">
+      ● SISTEMA DE GESTÃO À VISTA EM TEMPO REAL
+    </div>
+  </div>
+
+  <!-- CABEÇALHO CORPORATIVO -->
+  <header class="app-header">
+    <div class="header-top">
+      <div class="brand-section">
+        <img src="LogoNSTECH.png" alt="NSTECH Soluções e Projetos" style="height: 38px; width: auto; object-fit: contain; background: white; padding: 3px 6px; border-radius: 4px;" />
+        <div class="brand-text">
+          <h1>Boletim Online de Moagem</h1>
+          <p class="brand-subtitle">Painel Gerencial de Acompanhamento em Tempo Real</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <span class="safra-badge" style="margin-right: 0.5rem; display: flex; align-items: center;">Safra 2026/27</span>
+
+        <div id="live-clock" class="clock-display">
+          <span>--/--/----</span> <b>--:--:--</b>
+        </div>
+
+        <!-- Visível só em dispositivos administradores; o número indica pedidos aguardando liberação -->
+        <button id="btn-acesso-admin" class="btn-icon" title="Dispositivos com acesso" onclick="Acesso.abrirAdmin()" style="display: none; position: relative;">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span id="acesso-admin-badge" class="acesso-admin-badge" style="display: none;">0</span>
+        </button>
+
+        <button id="btn-theme-toggle" class="btn-icon" title="Alternar Tema Claro/Escuro" onclick="App.toggleTheme()">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </button>
+
+        <button id="btn-fullscreen" class="btn-icon" title="Alternar Tela Cheia (F11)" onclick="TVController.toggleFullscreen()">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- MENU DE NAVEGAÇÃO SUPERIOR (setas indicam que há mais opções quando o menu não cabe na tela) -->
+    <div class="nav-wrap" id="nav-wrap">
+    <button type="button" class="nav-hint nav-hint-left" aria-label="Ver opções anteriores do menu" onclick="App.scrollNav(-1)">‹</button>
+    <nav class="nav-container" id="nav-container">
+      <div class="nav-tabs">
+        <button class="nav-tab active" data-tab="agricola" onclick="App.switchTab('agricola')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+          <span>Agrícola</span>
+        </button>
+        <button class="nav-tab" data-tab="industria" onclick="App.switchTab('industria')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          <span>Indústria</span>
+        </button>
+        <button class="nav-tab" data-tab="producao" onclick="App.switchTab('producao')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>Prod. Diária</span>
+        </button>
+        <button class="nav-tab" data-tab="producao-semanal" onclick="App.switchTab('producao-semanal')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Prod. Semanal</span>
+        </button>
+        <button class="nav-tab" data-tab="frota" onclick="App.switchTab('frota')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+          <span>Frota</span>
+        </button>
+        <button class="nav-tab" data-tab="frota-disponibilidade" onclick="App.switchTab('frota-disponibilidade')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <span>Disponibilidade da Frota</span>
+        </button>
+        <button class="nav-tab" data-tab="laboratorio" onclick="App.switchTab('laboratorio')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          <span>Laboratório</span>
+        </button>
+      </div>
+
+      <!-- CONTROLES MODO TV / ROTAÇÃO AUTOMÁTICA -->
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+        <div class="timer-select-wrapper" title="Defina o intervalo de tempo para cada tela">
+          <span style="font-size: 0.72rem; color: var(--text-secondary); margin-right: 0.25rem;">⏱️ Intervalo:</span>
+          <select id="tv-timer-select" class="custom-select" onchange="TVController.setDuration(this.value)">
+            <option value="60">1m</option>
+            <option value="90">1,5m</option>
+            <option value="120">2m</option>
+            <option value="210" selected>3,5m (210s)</option>
+            <option value="300">5m</option>
+          </select>
+        </div>
+
+        <button id="btn-tv-auto" class="tv-control-pill" onclick="TVController.toggle()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Rotação Automática</span>
+        </button>
+      </div>
+    </nav>
+    <button type="button" class="nav-hint nav-hint-right" aria-label="Ver mais opções do menu" onclick="App.scrollNav(1)">›</button>
+    </div>
+  </header>
+
+  <!-- CONTAINER PRINCIPAL DA VIEW ATIVA -->
+  <main id="main-view-container" class="main-content slide-transition">
+    <!-- Renderizado dinamicamente pelo app.js -->
+  </main>
+
+  <!-- BARRA DE PROGRESSO LINEAR TV -->
+  <div id="tv-linear-progress" class="tv-linear-progress" style="display: none;">
+    <div id="tv-linear-progress-fill" class="tv-linear-progress-fill"></div>
+  </div>
+
+  <!-- SLIDE-OVER DRAWER DE DETALHAMENTO (SUBSTITUI OS IFRAMES) -->
+  <div id="drawer-overlay" class="drawer-overlay">
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <div>
+          <h2 id="drawer-title" class="drawer-title">Detalhamento de Entrada de Cana</h2>
+          <p id="drawer-subtitle" class="drawer-subtitle">Período Selecionado</p>
+        </div>
+        <button class="drawer-close" onclick="Drawer.close()" title="Fechar (ESC)">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="drawer-body-content" class="drawer-body">
+        <!-- Conteúdo do Detalhamento -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE PARADAS / ALERTAS -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title" style="font-family: var(--font-display); font-size: 1.1rem; color: var(--text-light);">Título do Modal</h3>
+        <button class="drawer-close" onclick="Modal.close()" title="Fechar (ESC)">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="modal-body-content" class="modal-body">
+        <!-- Conteúdo do Modal -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST DE NOTIFICAÇÃO TV -->
+  <div id="tv-toast" style="position: fixed; top: 1.5rem; right: 1.5rem; background: rgba(15, 23, 42, 0.95); border: 1px solid var(--accent-emerald); color: white; padding: 0.65rem 1.25rem; border-radius: var(--radius-md); font-size: 0.85rem; z-index: 9999; display: none; box-shadow: var(--shadow-lg);">
+    Notificação
+  </div>
+
+  <!-- Scripts da Aplicação -->
+  <script src="js/api.js"></script>
+  <script src="js/components/drawer.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/components/charts.js"></script>
+  <script src="js/tvController.js"></script>
+  <script src="js/views/agricolaView.js"></script>
+  <script src="js/views/industriaView.js"></script>
+  <script src="js/views/producaoView.js"></script>
+  <script src="js/views/frotaView.js"></script>
+  <script src="js/views/complementaresView.js"></script>
+  <script src="js/acesso.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
