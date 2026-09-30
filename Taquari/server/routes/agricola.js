@@ -76,7 +76,7 @@ router.get('/', async (req, res) => {
           resumoTotal.push(item);
         } else if (r.TIPO === '1') {
           resumoPropria.push(item);
-        } else if (r.TIPO === '3') {
+        } else if (r.TIPO === '2') { // Taquari: tipo de fazenda 2 = "F Fornecedor" (na UPR é 3)
           resumoFornecedor.push(item);
         } else if (r.TIPO === '5') {
           resumoTurnos.push(item);
