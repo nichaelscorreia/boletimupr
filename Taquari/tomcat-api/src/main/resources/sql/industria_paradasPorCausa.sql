@@ -1,4 +1,4 @@
--- Horas paradas por causa em cada moenda (3 = Moenda A, 355 = Moenda B): hoje, ontem e safra.
+-- Horas paradas por causa em cada objeto de parada (2 = Recepção, 3 = Moenda): hoje, ontem e safra.
 -- Minutos calculados como na GOT_CALCULO_HORA (fim 00:00 = meia-noite; fim < início = virou o dia).
 -- Parada em aberto (sem hora de fim, ou início = fim) conta até agora se for de hoje, ou até 24:00 do dia.
 -- Causa 69 (Início de Safra) fica de fora, como na consulta de status das moendas.
@@ -26,7 +26,7 @@ from (select a.codigo_objeto, a.cod_causa, trim(b.descricao) causa, trunc(a.data
       where a.cod_grupoempresa = 1
       and   a.cod_empresa      = 1
       and   a.cod_filial       = 1
-      and   a.codigo_objeto in (3, 355)
+      and   a.codigo_objeto in (2, 3)
       and   a.cod_causa       != 69
       and   a.datahora        >= to_date(:inicioSafra, 'dd/mm/rrrr')
       and   regexp_like(a.horaini, '^[0-9]{2}:[0-9]{2}')

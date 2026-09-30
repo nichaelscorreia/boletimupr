@@ -180,8 +180,8 @@ const IndustriaView = {
     const cor = isEntreSafra ? '#94a3b8' : (isRodando ? '#10b981' : '#f43f5e');
     const fundo = isEntreSafra ? 'rgba(148,163,184,0.12)' : (isRodando ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)');
 
-    // Moenda A = objeto 3, Moenda B = objeto 355
-    const codObj = m.id === 'moenda_a' ? '3' : '355';
+    // Taquari: Recepção = objeto 2, Moenda = objeto 3 (mesma ordem de STATUS_A/STATUS_B em industria_statusFabrica.sql)
+    const codObj = m.id === 'moenda_a' ? '2' : '3';
     const ultimas = paradas.filter(p => String(p.codObjeto) === codObj);
     const causas = paradasPorCausa ? paradasPorCausa.filter(c => String(c.codObjeto) === codObj) : null;
     const tot = (causas || []).reduce((a, c) => ({ hoje: a.hoje + c.minHoje, ontem: a.ontem + c.minOntem, safra: a.safra + c.minSafra }), { hoje: 0, ontem: 0, safra: 0 });

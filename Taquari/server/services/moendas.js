@@ -11,7 +11,7 @@ function montarMoendas(statusRows) {
   return [
     {
       id: 'moenda_a',
-      nome: 'Moenda A',
+      nome: 'Recepção',
       status: isMoendaAParadaEntreSafra ? 'Parada de Entre-Safra' : (st.STATUS_A || 'RODANDO'),
       statusColor: isMoendaAParadaEntreSafra ? 'slate' : (st.STATUS_A === 'PARADA' ? 'rose' : 'emerald'),
       motivo: isMoendaAParadaEntreSafra ? 'Aguardando início' : (st.MOTIVO_A || 'Sem ocorrências registradas'),
@@ -22,7 +22,7 @@ function montarMoendas(statusRows) {
     },
     {
       id: 'moenda_b',
-      nome: 'Moenda B',
+      nome: 'Moenda',
       status: st.STATUS_B || 'RODANDO',
       statusColor: (st.STATUS_B === 'PARADA' ? 'rose' : 'emerald'),
       motivo: st.MOTIVO_B || 'Sem ocorrências registradas',

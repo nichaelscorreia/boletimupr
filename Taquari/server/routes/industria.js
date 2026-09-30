@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
           objeto: p.DESC_OBJETO,
           observacao: p.MOTIVO
         })),
-        // Por moenda (3 = A, 355 = B): minutos parados por causa. null = consulta indisponível
+        // Por objeto de parada (2 = Recepção, 3 = Moenda): minutos parados por causa. null = consulta indisponível
         paradasPorCausa: causasRows ? causasRows.map(r => ({
           codObjeto: r.CODIGO_OBJETO,
           causa: (r.CAUSA || '').trim(),
