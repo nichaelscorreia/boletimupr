@@ -27,6 +27,23 @@ final class ApiConfig {
     final int safraPadrao;
     final String inicioSafraPadrao;
 
+    // Empresa (usada pelas rotinas de e-mail; os demais SQLs trazem esses códigos fixos)
+    final int codGrupoEmpresa;
+    final int codEmpresa;
+    final int codFilial;
+
+    // E-mail automático dos fretistas
+    final boolean emailFretistasAtivo;
+    final String emailFretistasHora;   // HH:mm no fuso emailFuso
+    final String emailFuso;
+    final String emailDestinoTeste;    // preenchido = TODOS os e-mails vão só para este endereço
+    final boolean emailRegistrar;      // false = não usa NST_EMAIL_ENVIO (sem controle de duplicidade; só para testes)
+    final String emailRemetenteNome;
+    final String smtpHost;
+    final int smtpPort;
+    final String smtpUser;
+    final String smtpPassword;
+
     /** Problemas de configuração que impedem a API de atender (lista vazia = OK). */
     final List<String> problems = new ArrayList<String>();
 
@@ -45,6 +62,21 @@ final class ApiConfig {
 
         safraPadrao = getInt(ctx, "SAFRA_PADRAO", 54, 1, 9999);
         inicioSafraPadrao = get(ctx, "INICIO_SAFRA_PADRAO", "10/09/2026");
+
+        codGrupoEmpresa = getInt(ctx, "COD_GRUPOEMPRESA", 2, 1, 9999);
+        codEmpresa = getInt(ctx, "COD_EMPRESA", 1, 1, 9999);
+        codFilial = getInt(ctx, "COD_FILIAL", 1, 1, 9999);
+
+        emailFretistasAtivo = "S".equalsIgnoreCase(get(ctx, "EMAIL_FRETISTAS_ATIVO", "N"));
+        emailFretistasHora = get(ctx, "EMAIL_FRETISTAS_HORA", "06:00");
+        emailFuso = get(ctx, "EMAIL_FUSO", "America/Maceio");
+        emailDestinoTeste = get(ctx, "EMAIL_DESTINO_TESTE", "");
+        emailRegistrar = !"N".equalsIgnoreCase(get(ctx, "EMAIL_REGISTRAR", "S"));
+        emailRemetenteNome = get(ctx, "EMAIL_REMETENTE_NOME", "Impacto Bioenergia");
+        smtpHost = get(ctx, "SMTP_HOST", "smtp-mail.outlook.com");
+        smtpPort = getInt(ctx, "SMTP_PORT", 587, 1, 65535);
+        smtpUser = get(ctx, "SMTP_USER", "");
+        smtpPassword = get(ctx, "SMTP_PASSWORD", "");
 
         if (dbUser.isEmpty() || dbPassword.isEmpty()) {
             problems.add("DB_USER/DB_PASSWORD não configurados");

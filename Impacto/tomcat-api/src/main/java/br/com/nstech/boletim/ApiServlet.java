@@ -26,6 +26,8 @@ import javax.servlet.http.HttpServletResponse;
  * Endpoints (todos GET):
  *   /api/health          sem autenticação, não toca no banco
  *   /api/ping            autenticado, executa SELECT 1 FROM DUAL
+ *   /api/email/fretistas/previa?data=&fornecedor=   autenticado, o que seria enviado (sem enviar)
+ *   POST /api/email/fretistas/enviar?data=&fornecedor=&reenviar=S   autenticado, dispara o envio agora
  *   /api/diag            autenticado, versões (Java/Tomcat/driver/Oracle), erro completo de conexão e
  *                        situação da tabela de dispositivos — para suporte remoto sem acesso ao servidor
  *   /api/queries         autenticado, lista as consultas e parâmetros aceitos
@@ -43,6 +45,10 @@ public class ApiServlet extends HttpServlet {
     private transient ConnectionPool pool;
     private transient Security security;
     private transient ResultCache cache;
+    private transient EmailFretistas emailFretistas;
+    private transient java.util.concurrent.ScheduledExecutorService agendador;
+    private volatile String ultimoDiaEmail = "";
+    private int tentativasEmail;
 
     @Override
     public void init() throws ServletException {
@@ -63,13 +69,85 @@ public class ApiServlet extends HttpServlet {
         }
         security = new Security(cfg.secret, cfg.rateLimitPerMinute);
         cache = new ResultCache(cfg.cacheSeconds);
+        try {
+            emailFretistas = new EmailFretistas(cfg, pool, getServletContext());
+        } catch (IOException e) {
+            throw new ServletException(e);
+        }
+        iniciarAgendadorEmail();
         log("Boletim API ativa: " + registry.all().size() + " consultas, pool=" + cfg.poolSize
             + ", cache=" + cfg.cacheSeconds + "s, IPs permitidos="
             + (cfg.allowedIps.isEmpty() ? "todos" : "restrito"));
     }
 
+    /** E-mail diário dos fretistas: confere a cada 5 minutos se já passou do horário e ainda não foi enviado hoje. */
+    private void iniciarAgendadorEmail() {
+        if (!cfg.emailFretistasAtivo) {
+            log("E-mail fretistas: agendamento desativado (EMAIL_FRETISTAS_ATIVO != S)");
+            return;
+        }
+        if (!emailFretistas.smtpConfigurado()) {
+            log("E-mail fretistas: SMTP_USER/SMTP_PASSWORD não configurados; agendamento não iniciado");
+            return;
+        }
+        final java.time.ZoneId zona;
+        final java.time.LocalTime hora;
+        try {
+            zona = java.time.ZoneId.of(cfg.emailFuso);
+            hora = java.time.LocalTime.parse(cfg.emailFretistasHora);
+        } catch (RuntimeException e) {
+            log("E-mail fretistas: EMAIL_FRETISTAS_HORA (HH:mm) ou EMAIL_FUSO inválido; agendamento não iniciado");
+            return;
+        }
+        agendador = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(new java.util.concurrent.ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r, "boletim-email-fretistas");
+                t.setDaemon(true);
+                return t;
+            }
+        });
+        agendador.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    verificarEnvioDiario(zona, hora);
+                } catch (Throwable t) {
+                    log("E-mail fretistas: erro no agendador", t);
+                }
+            }
+        }, 1, 5, java.util.concurrent.TimeUnit.MINUTES);
+        log("E-mail fretistas: agendado para " + hora + " (" + zona + ")"
+            + (emailFretistas.modoTeste() ? " em MODO DE TESTE -> " + cfg.emailDestinoTeste : ""));
+    }
+
+    private void verificarEnvioDiario(java.time.ZoneId zona, java.time.LocalTime hora) {
+        java.time.ZonedDateTime agora = java.time.ZonedDateTime.now(zona);
+        String hoje = agora.toLocalDate().toString();
+        java.time.LocalTime t = agora.toLocalTime();
+        // Só dentro da janela [hora, hora + 12h): se o Tomcat estava fora do ar às 6h, envia ao voltar
+        if (hoje.equals(ultimoDiaEmail) || t.isBefore(hora) || java.time.Duration.between(hora, t).toHours() >= 12) return;
+        String ontem = agora.toLocalDate().minusDays(1).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        boolean concluido;
+        try {
+            concluido = emailFretistas.enviar(ontem, false, null).falhas == 0;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        } catch (Exception e) {
+            log("E-mail fretistas: envio do dia " + ontem + " falhou", e);
+            concluido = false;
+        }
+        // Com falhas, tenta de novo nas próximas verificações (até 4 vezes no dia); quem já recebeu não recebe de novo
+        if (concluido || ++tentativasEmail >= 4) {
+            ultimoDiaEmail = hoje;
+            tentativasEmail = 0;
+        }
+    }
+
     @Override
     public void destroy() {
+        if (agendador != null) agendador.shutdownNow();
         if (pool != null) pool.close();
         // Evita vazamento de memória do driver Oracle em redeploys
         ClassLoader cl = getClass().getClassLoader();
@@ -136,6 +214,8 @@ public class ApiServlet extends HttpServlet {
                 send(resp, 400, error("Envie os parâmetros na query string"));
             } else if (path.startsWith("/q/")) {
                 runQuery(req, resp, path.substring(3), true);
+            } else if ("/email/fretistas/enviar".equals(path)) {
+                emailFretistas(req, resp, true);
             } else {
                 send(resp, 405, error("Método não permitido"));
             }
@@ -143,6 +223,8 @@ public class ApiServlet extends HttpServlet {
             ping(resp);
         } else if ("/diag".equals(path)) {
             diag(resp);
+        } else if ("/email/fretistas/previa".equals(path)) {
+            emailFretistas(req, resp, false);
         } else if ("/queries".equals(path)) {
             listQueries(resp);
         } else if (path.startsWith("/q/")) {
@@ -303,6 +385,41 @@ public class ApiServlet extends HttpServlet {
         } catch (Exception e) {
             log("Ping ao Oracle falhou", e);
             send(resp, 503, error("Oracle indisponível: " + causas(e)));
+        }
+    }
+
+    /** Prévia (GET) ou envio manual (POST) do e-mail dos fretistas. data = dd/mm/aaaa (padrão: ontem). */
+    private void emailFretistas(HttpServletRequest req, HttpServletResponse resp, boolean enviar) throws IOException {
+        String data = req.getParameter("data");
+        if (data == null || data.trim().isEmpty()) {
+            data = java.time.ZonedDateTime.now(java.time.ZoneId.of(cfg.emailFuso)).toLocalDate().minusDays(1)
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        } else if (!Params.isValidDate(data.trim())) {
+            send(resp, 400, error("Parâmetro 'data' deve ser dd/mm/aaaa"));
+            return;
+        }
+        Integer fornecedor = null;
+        String f = req.getParameter("fornecedor");
+        if (f != null && !f.trim().isEmpty()) {
+            if (!f.trim().matches("\\d{1,9}")) {
+                send(resp, 400, error("Parâmetro 'fornecedor' deve ser inteiro"));
+                return;
+            }
+            fornecedor = Integer.valueOf(f.trim());
+        }
+        try {
+            if (enviar) {
+                boolean reenviar = "S".equalsIgnoreCase(req.getParameter("reenviar"));
+                send(resp, 200, EmailFretistas.resultadoJson(emailFretistas.enviar(data.trim(), reenviar, fornecedor)));
+            } else {
+                send(resp, 200, emailFretistas.previaJson(data.trim(), fornecedor));
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            send(resp, 503, error("Envio interrompido"));
+        } catch (Exception e) {
+            log("E-mail fretistas: erro em " + (enviar ? "envio manual" : "prévia"), e);
+            send(resp, 500, error(causas(e)));
         }
     }
 

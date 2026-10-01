@@ -74,3 +74,18 @@ mvn package      # gera target/boletim-api.war (Java 8+)
 
 Para adicionar uma consulta: crie o `.sql` em `src/main/resources/sql` (parâmetros como `:safra`),
 registre em `QueryRegistry.java` e adicione o descritor em `server/db/queries.js`.
+
+## E-mail diário dos fretistas (Impacto)
+
+Todos os dias no horário de `EMAIL_FRETISTAS_HORA` (padrão 06:00, fuso `EMAIL_FUSO`), a API envia a cada fretista
+**somente a sua produção** do dia anterior (transporte e colheita), com quebra por tipo de equipamento, totais por
+tipo e total geral. SQL em `src/main/resources/sql/email_fretistas.sql`; layout em `EmailFretistas.java`.
+
+- **Modo de teste**: enquanto `EMAIL_DESTINO_TESTE` estiver preenchido, **todos** os e-mails vão só para esse endereço
+  (o e-mail mostra para quem iria). Deixe `value=""` para enviar aos e-mails do cadastro.
+- **Sem duplicidade**: cada envio fica em `NST_EMAIL_ENVIO` (criada automaticamente; script em `ddl/nst_email_envio.sql`).
+  Se o Tomcat estiver fora do ar às 6h, o envio acontece quando ele voltar (até 12h depois); quem já recebeu não recebe de novo.
+- **Configuração** (`boletim-api.xml`): `EMAIL_FRETISTAS_ATIVO` (S/N), `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`,
+  `EMAIL_REMETENTE_NOME`, `COD_GRUPOEMPRESA`, `COD_EMPRESA`, `COD_FILIAL` (a safra é `SAFRA_PADRAO`).
+- **Endpoints assinados**: `GET /api/email/fretistas/previa?data=dd/mm/aaaa[&fornecedor=cod]` (mostra o que seria enviado)
+  e `POST /api/email/fretistas/enviar?data=dd/mm/aaaa[&fornecedor=cod][&reenviar=S]` (envia agora).

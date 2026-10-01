@@ -33,6 +33,12 @@
       <artifactId>ojdbc8</artifactId>
       <version>19.24.0.0</version>
     </dependency>
+    <!-- Envio de e-mail (API javax.mail; inclui o javax.activation que saiu do Java 11+) -->
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>jakarta.mail</artifactId>
+      <version>1.6.7</version>
+    </dependency>
   </dependencies>
 
   <build>
