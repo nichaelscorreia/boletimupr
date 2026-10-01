@@ -37,6 +37,7 @@ final class ApiConfig {
     final String emailFretistasHora;   // HH:mm no fuso emailFuso
     final String emailFuso;
     final String emailDestinoTeste;    // preenchido = TODOS os e-mails vão só para este endereço
+    final String emailCopia;           // endereço(s) em cópia (CC) de todos os e-mails, em teste e em produção
     final boolean emailRegistrar;      // false = não usa NST_EMAIL_ENVIO (sem controle de duplicidade; só para testes)
     final String emailRemetenteNome;
     final String smtpHost;
@@ -71,6 +72,7 @@ final class ApiConfig {
         emailFretistasHora = get(ctx, "EMAIL_FRETISTAS_HORA", "06:00");
         emailFuso = get(ctx, "EMAIL_FUSO", "America/Maceio");
         emailDestinoTeste = get(ctx, "EMAIL_DESTINO_TESTE", "");
+        emailCopia = get(ctx, "EMAIL_COPIA", "");
         emailRegistrar = !"N".equalsIgnoreCase(get(ctx, "EMAIL_REGISTRAR", "S"));
         emailRemetenteNome = get(ctx, "EMAIL_REMETENTE_NOME", "Impacto Bioenergia");
         smtpHost = get(ctx, "SMTP_HOST", "smtp-mail.outlook.com");

@@ -83,6 +83,8 @@ tipo e total geral. SQL em `src/main/resources/sql/email_fretistas.sql`; layout 
 
 - **Modo de teste**: enquanto `EMAIL_DESTINO_TESTE` estiver preenchido, **todos** os e-mails vão só para esse endereço
   (o e-mail mostra para quem iria). Deixe `value=""` para enviar aos e-mails do cadastro.
+- **Cópia**: os endereços de `EMAIL_COPIA` recebem cópia (CC) de todos os e-mails, em teste e em produção
+  (coordenação agrícola). Quem já é destinatário principal não recebe a cópia em duplicidade.
 - **Sem duplicidade**: cada envio fica em `NST_EMAIL_ENVIO` (criada automaticamente; script em `ddl/nst_email_envio.sql`).
   Se o Tomcat estiver fora do ar às 6h, o envio acontece quando ele voltar (até 12h depois); quem já recebeu não recebe de novo.
 - **Configuração** (`boletim-api.xml`): `EMAIL_FRETISTAS_ATIVO` (S/N), `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`,

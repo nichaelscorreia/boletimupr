@@ -197,14 +197,15 @@ final class EmailFretistas {
                     continue;
                 }
                 List<InternetAddress> destinos = destinatarios(f);
-                String destinoTxt = enderecos(destinos);
+                List<InternetAddress> copias = copias(destinos);
+                String destinoTxt = enderecos(destinos) + (copias.isEmpty() ? "" : " (cc: " + enderecos(copias) + ")");
                 try {
                     if (destinos.isEmpty()) throw new IllegalStateException("e-mail do cadastro inválido: " + f.emailCadastro);
                     if (transporte == null) {
                         transporte = sessao.getTransport("smtp");
                         transporte.connect(cfg.smtpHost, cfg.smtpPort, cfg.smtpUser, cfg.smtpPassword);
                     }
-                    MimeMessage msg = montar(sessao, f, dataRef, destinos);
+                    MimeMessage msg = montar(sessao, f, dataRef, destinos, copias);
                     transporte.sendMessage(msg, msg.getAllRecipients());
                     registrar(dataRef, f, destinoTxt, "E", null);
                     r.enviados++;
@@ -252,7 +253,21 @@ final class EmailFretistas {
 
     /** Em modo de teste, tudo vai só para EMAIL_DESTINO_TESTE; senão, para o(s) e-mail(s) do cadastro. */
     private List<InternetAddress> destinatarios(Fretista f) {
-        String origem = modoTeste() ? cfg.emailDestinoTeste : f.emailCadastro;
+        return enderecosDe(modoTeste() ? cfg.emailDestinoTeste : f.emailCadastro);
+    }
+
+    /** Cópia (CC) de EMAIL_COPIA, sem repetir quem já está como destinatário principal. */
+    private List<InternetAddress> copias(List<InternetAddress> destinos) {
+        List<InternetAddress> lista = new ArrayList<InternetAddress>();
+        for (InternetAddress c : enderecosDe(cfg.emailCopia)) {
+            boolean repetido = false;
+            for (InternetAddress d : destinos) repetido |= d.getAddress().equalsIgnoreCase(c.getAddress());
+            if (!repetido) lista.add(c);
+        }
+        return lista;
+    }
+
+    private static List<InternetAddress> enderecosDe(String origem) {
         List<InternetAddress> lista = new ArrayList<InternetAddress>();
         for (String e : origem.split("[;,\\s]+")) {
             if (EMAIL.matcher(e).matches()) {
@@ -272,10 +287,12 @@ final class EmailFretistas {
         return sb.toString();
     }
 
-    private MimeMessage montar(Session sessao, Fretista f, String dataRef, List<InternetAddress> destinos) throws Exception {
+    private MimeMessage montar(Session sessao, Fretista f, String dataRef, List<InternetAddress> destinos,
+                               List<InternetAddress> copias) throws Exception {
         MimeMessage msg = new MimeMessage(sessao);
         msg.setFrom(new InternetAddress(cfg.smtpUser, cfg.emailRemetenteNome, "UTF-8"));
         msg.setRecipients(Message.RecipientType.TO, destinos.toArray(new InternetAddress[0]));
+        if (!copias.isEmpty()) msg.setRecipients(Message.RecipientType.CC, copias.toArray(new InternetAddress[0]));
         msg.setSubject((modoTeste() ? "[TESTE] " : "") + "Impacto Bioenergia - Sua produção de " + dataRef + " - " + f.nome, "UTF-8");
         msg.setHeader("Auto-Submitted", "auto-generated");
 
@@ -330,7 +347,8 @@ final class EmailFretistas {
         if (modoTeste()) {
             h.append("<tr><td style=\"background:#fef3c7;color:#92400e;padding:10px 24px;font-size:13px;\">")
              .append("<b>E-mail de teste.</b> Em produção, este e-mail seria enviado para: <b>")
-             .append(esc(f.emailCadastro.isEmpty() ? "(sem e-mail no cadastro)" : f.emailCadastro)).append("</b></td></tr>");
+             .append(esc(f.emailCadastro.isEmpty() ? "(sem e-mail no cadastro)" : f.emailCadastro)).append("</b>")
+             .append(cfg.emailCopia.isEmpty() ? "" : ", com cópia para <b>" + esc(cfg.emailCopia) + "</b>").append("</td></tr>");
         }
 
         h.append("<tr><td style=\"padding:20px 24px 14px;border-bottom:4px solid ").append(VERDE).append(";\">")
@@ -381,7 +399,10 @@ final class EmailFretistas {
 
     String texto(Fretista f, String dataRef) {
         StringBuilder t = new StringBuilder();
-        if (modoTeste()) t.append("[E-MAIL DE TESTE - destinatário original: ").append(f.emailCadastro).append("]\n\n");
+        if (modoTeste()) {
+            t.append("[E-MAIL DE TESTE - destinatário original: ").append(f.emailCadastro)
+             .append(cfg.emailCopia.isEmpty() ? "" : "; cópia para: " + cfg.emailCopia).append("]\n\n");
+        }
         t.append("IMPACTO BIOENERGIA\nSua produção de ").append(dataRef).append("\nFretista: ").append(f.nome)
          .append(" (código ").append(f.codigo).append(")\n");
         for (Tipo tp : f.tipos.values()) {
@@ -415,6 +436,7 @@ final class EmailFretistas {
               .append(",\"fornecedor\":").append(Json.quote(f.nome))
               .append(",\"emailCadastro\":").append(Json.quote(f.emailCadastro))
               .append(",\"destinatario\":").append(Json.quote(enderecos(destinatarios(f))))
+              .append(",\"copia\":").append(Json.quote(enderecos(copias(destinatarios(f)))))
               .append(",\"jaEnviado\":").append(jaEnviado(dataRef, f.codigo))
               .append(",\"viagens\":").append(f.viagens)
               .append(",\"toneladas\":").append(String.format(Locale.ROOT, "%.3f", f.toneladas))
