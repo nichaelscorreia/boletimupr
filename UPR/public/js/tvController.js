@@ -104,7 +104,7 @@ const TVController = {
     this.durationSeconds = currentTabObj.duration || 40;
 
     this.timerInterval = setInterval(() => {
-      if (this.isPaused || Drawer.isOpen() || Modal.isOpen()) return;
+      if (this.isPaused || Drawer.isOpen() || Modal.isOpen() || (window.Assistente && Assistente.isOpen())) return;
 
       this.timeElapsed += 1;
       const progressPercent = Math.min(100, (this.timeElapsed / this.durationSeconds) * 100);

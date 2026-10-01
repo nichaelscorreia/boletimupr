@@ -11,6 +11,7 @@ const laboratorioRoutes = require('./routes/laboratorio');
 const outrosRoutes = require('./routes/outros');
 const acessoRoutes = require('./routes/acesso');
 const painelRoutes = require('./routes/painel');
+const assistenteRoutes = require('./routes/assistente');
 const { exigirDispositivoAprovado } = require('./services/acessoDispositivo');
 
 const app = express();
@@ -46,6 +47,7 @@ app.use('/api/producao', producaoRoutes);
 app.use('/api/frota', frotaRoutes);
 app.use('/api/laboratorio', laboratorioRoutes);
 app.use('/api/painel', painelRoutes);
+app.use('/api/assistente', assistenteRoutes);
 app.use('/api', outrosRoutes);
 
 // Fallback SPA

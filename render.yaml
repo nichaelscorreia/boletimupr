@@ -19,3 +19,5 @@ services:
         sync: false # informe no painel do Render (não versionar)
       - key: ACESSO_CODIGO_LIBERACAO
         sync: false # código do seu primeiro acesso como administrador (não versionar)
+      - key: ANTHROPIC_API_KEY
+        sync: false # chave da API do Claude para o assistente de dados (não versionar)

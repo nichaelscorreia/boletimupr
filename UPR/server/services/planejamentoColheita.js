@@ -168,4 +168,21 @@ function ordenar(itens) {
   return itens.sort((a, b) => b.planejado - a.planejado || b.colhido - a.colhido || b.estimado - a.estimado);
 }
 
-module.exports = { resumoGrupos, detalhe };
+// Busca por nome de fazenda (sem acento/maiúsculas): métricas de cada fazenda encontrada e dos seus lotes
+function buscarFazenda(rows, termo) {
+  const norm = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
+  const alvo = norm(termo);
+  if (!alvo) return [];
+  const lotes = rows.map(toLote).filter(l => norm(l.fazenda).includes(alvo));
+  return [...agrupar(lotes, l => `${l.codFornecedor}|${l.codFazenda}`).values()].map(ls => ({
+    fazenda: ls[0].fazenda,
+    codFazenda: ls[0].codFazenda,
+    fornecedor: ls[0].fornecedor,
+    codFornecedor: ls[0].codFornecedor,
+    grupo: GRUPOS.find(g => g.id === ls[0].grupo)?.nome,
+    ...metricas(ls),
+    lotesDetalhe: ls.map(l => ({ lote: l.lote, dataPrevista: l.dataPrevista, ...metricas([l]) }))
+  }));
+}
+
+module.exports = { resumoGrupos, detalhe, buscarFazenda };

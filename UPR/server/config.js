@@ -17,5 +17,13 @@ module.exports = {
     // Vazio = desativado; aí a liberação inicial é feita por SQL (ver tomcat-api/ddl).
     codigoLiberacao: process.env.ACESSO_CODIGO_LIBERACAO || ''
   },
+  assistente: {
+    // Chave da API do Claude (Anthropic). Vazio = assistente desativado (o botão não aparece)
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    modelo: process.env.ASSISTENTE_MODELO || 'claude-opus-5-5',
+    esforco: process.env.ASSISTENTE_ESFORCO || 'medium', // low | medium | high
+    limiteHora: parseInt(process.env.ASSISTENTE_LIMITE_HORA, 10) || 30,   // perguntas por dispositivo por hora
+    limiteDia: parseInt(process.env.ASSISTENTE_LIMITE_DIA, 10) || 500     // perguntas no total por dia
+  },
   mockMode: process.env.FORCE_MOCK === 'true'
 };

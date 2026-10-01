@@ -26,6 +26,9 @@ const App = {
     window.addEventListener('resize', () => this.atualizarTelaCheia());
     this.atualizarTelaCheia();
 
+    // Assistente de dados (só aparece se configurado no servidor)
+    Assistente.iniciar();
+
     // Faixa superior do modo TV com dados reais
     this.atualizarTicker();
     setInterval(() => this.atualizarTicker(), 60000);
