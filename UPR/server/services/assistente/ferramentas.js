@@ -119,6 +119,22 @@ const DEFINICOES = [
       'Indicadores industriais do laboratório (ontem, hoje e média da safra: ART, pol, ATR, fibra, geração de ' +
       'energia, pH, impurezas etc.) e moagem média por hora (hoje, ontem, safra).',
     input_schema: { type: 'object', properties: {}, additionalProperties: false }
+  },
+  {
+    name: 'calcular',
+    description:
+      'Calculadora exata. Use SEMPRE que precisar de uma soma, diferença, média (inclusive ponderada), percentual ou ' +
+      'qualquer conta que não venha pronta nos dados — nunca faça contas de cabeça. Envie uma ou mais expressões ' +
+      'aritméticas com números (ponto como separador decimal, sem separador de milhar), + - * / e parênteses. ' +
+      'Exemplo de média ponderada: "(127.0993*14199.88 + 126.4632*61.46) / (14199.88 + 61.46)".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        expressoes: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 20 }
+      },
+      required: ['expressoes'],
+      additionalProperties: false
+    }
   }
 ];
 
@@ -134,6 +150,51 @@ const ROTULOS = {
 };
 
 class ErroFerramenta extends Error {}
+
+// Avaliador aritmético seguro (sem eval): números, + - * /, parênteses e sinal unário
+function avaliar(expr) {
+  const s = String(expr).replace(/\s+/g, '');
+  if (!s || s.length > 500 || !/^[0-9+\-*/().]+$/.test(s)) throw new ErroFerramenta(`expressão inválida: ${expr}`);
+  let i = 0;
+  const erro = () => new ErroFerramenta(`expressão inválida: ${expr}`);
+  function fator() {
+    if (s[i] === '-') { i++; return -fator(); }
+    if (s[i] === '+') { i++; return fator(); }
+    if (s[i] === '(') {
+      i++;
+      const v = soma();
+      if (s[i] !== ')') throw erro();
+      i++;
+      return v;
+    }
+    const m = /^\d+(\.\d+)?/.exec(s.slice(i));
+    if (!m) throw erro();
+    i += m[0].length;
+    return parseFloat(m[0]);
+  }
+  function produto() {
+    let v = fator();
+    while (s[i] === '*' || s[i] === '/') {
+      const op = s[i++];
+      const d = fator();
+      if (op === '/' && d === 0) throw new ErroFerramenta(`divisão por zero em: ${expr}`);
+      v = op === '*' ? v * d : v / d;
+    }
+    return v;
+  }
+  function soma() {
+    let v = produto();
+    while (s[i] === '+' || s[i] === '-') {
+      const op = s[i++];
+      const d = produto();
+      v = op === '+' ? v + d : v - d;
+    }
+    return v;
+  }
+  const r = soma();
+  if (i !== s.length || !isFinite(r)) throw erro();
+  return Number(r.toFixed(6));
+}
 
 function exigirData(valor, campo) {
   if (!DATA.test(String(valor || ''))) throw new ErroFerramenta(`${campo} deve estar no formato dd/mm/aaaa`);
@@ -211,6 +272,12 @@ async function executar(nome, input = {}) {
     }
     case 'indicadores_laboratorio':
       return dadosDaRota(await chamarRota(rotas.laboratorio, '/'));
+    case 'calcular': {
+      if (!Array.isArray(input.expressoes) || input.expressoes.length === 0 || input.expressoes.length > 20) {
+        throw new ErroFerramenta('envie de 1 a 20 expressões');
+      }
+      return input.expressoes.map(e => ({ expressao: e, resultado: avaliar(e) }));
+    }
     default:
       throw new ErroFerramenta(`ferramenta desconhecida: ${nome}`);
   }
@@ -231,4 +298,4 @@ async function executarParaModelo(nome, input) {
   }
 }
 
-module.exports = { DEFINICOES, ROTULOS, executarParaModelo };
+module.exports = { DEFINICOES, ROTULOS, executarParaModelo, avaliar };

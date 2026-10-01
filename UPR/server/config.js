@@ -1,5 +1,15 @@
 require('dotenv').config();
 
+// Aceita o identificador da API ("claude-sonnet-5-5") ou o nome usual ("Sonnet 5.5", "opus 5.5")
+function modeloAssistente(valor) {
+  const v = String(valor || '').trim();
+  if (!v) return 'claude-opus-5-5';
+  if (v.toLowerCase().startsWith('claude-')) return v.toLowerCase();
+  const nome = v.toLowerCase().replace(/claude/g, '').replace(/[\s._-]+/g, ' ').trim();
+  const apelidos = { 'sonnet 5 5': 'claude-sonnet-5-5', 'sonnet': 'claude-sonnet-5-5', 'opus 5 5': 'claude-opus-5-5', 'opus': 'claude-opus-5-5' };
+  return apelidos[nome] || v;
+}
+
 module.exports = {
   port: process.env.PORT || 3000,
   safra: process.env.ORACLE_SAFRA || '54',
@@ -20,7 +30,7 @@ module.exports = {
   assistente: {
     // Chave da API do Claude (Anthropic). Vazio = assistente desativado (o botão não aparece)
     apiKey: process.env.ANTHROPIC_API_KEY || '',
-    modelo: process.env.ASSISTENTE_MODELO || 'claude-opus-5-5',
+    modelo: modeloAssistente(process.env.ASSISTENTE_MODELO),
     esforco: process.env.ASSISTENTE_ESFORCO || 'medium', // low | medium | high
     limiteHora: parseInt(process.env.ASSISTENTE_LIMITE_HORA, 10) || 30,   // perguntas por dispositivo por hora
     limiteDia: parseInt(process.env.ASSISTENTE_LIMITE_DIA, 10) || 500     // perguntas no total por dia

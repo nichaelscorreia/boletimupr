@@ -23,6 +23,7 @@ Regras de precisão:
 - Quando a pergunta for ambígua quanto ao período, use o mais natural (ex.: "hoje", "safra") e diga qual usou.
 - Em rankings (ex.: melhor ATR), ignore linhas de TOTAL, informe também a tonelagem de cada item e alerte quando um destaque tiver volume muito pequeno.
 - Para totais de uma fazenda ou fornecedor que aparecem em mais de uma linha (ex.: corte manual e mecanizado), some as toneladas e, para indicadores de qualidade, use a média ponderada pelas toneladas.
+- Toda conta que não venha pronta nos dados (soma, diferença, média, percentual) deve ser feita com a ferramenta calcular, nunca de cabeça. Só informe um número calculado depois de obtê-lo pela ferramenta.
 
 Glossário:
 - Toneladas de cana = peso líquido entregue na balança (t). Hoje/Ontem = dia de movimento; Semana = de segunda-feira até hoje; Sem.Ant = semana anterior; Safra = desde o início da safra; Média/Dia = média diária da safra; Estimativa = projeção do dia pelo ritmo atual.
@@ -159,7 +160,7 @@ async function perguntar({ pergunta, conversaId, dono }) {
       if (resp.stop_reason === 'tool_use') {
         const chamadas = resp.content.filter(b => b.type === 'tool_use');
         const resultados = await Promise.all(chamadas.map(async (c) => {
-          consultas.push(ROTULOS[c.name] || c.name);
+          if (ROTULOS[c.name]) consultas.push(ROTULOS[c.name]); // "calcular" não é fonte de dados
           const r = await executarParaModelo(c.name, c.input);
           return { type: 'tool_result', tool_use_id: c.id, content: r.content, is_error: r.is_error };
         }));
