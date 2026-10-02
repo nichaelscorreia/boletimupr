@@ -23,6 +23,12 @@ const TVController = {
     this.setupListeners();
   },
 
+  // true quando a tecla foi pressionada dentro de um campo de texto
+  digitando(e) {
+    const el = e.target;
+    return !!el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
+  },
+
   setDuration(seconds) {
     const s = parseInt(seconds, 10) || 210;
     this.durationSeconds = s;
@@ -36,6 +42,8 @@ const TVController = {
   setupListeners() {
     // Tecla espaço para pausar/retomar rotação
     document.addEventListener('keydown', (e) => {
+      // Atalhos não valem enquanto o usuário digita (ex.: espaço no campo de pergunta do assistente)
+      if (TVController.digitando(e)) return;
       if (e.code === 'Space' && this.isActive && !Drawer.isOpen() && !Modal.isOpen()) {
         e.preventDefault();
         this.togglePause();
@@ -104,7 +112,7 @@ const TVController = {
     this.durationSeconds = currentTabObj.duration || 40;
 
     this.timerInterval = setInterval(() => {
-      if (this.isPaused || Drawer.isOpen() || Modal.isOpen() || (window.Assistente && Assistente.isOpen())) return;
+      if (this.isPaused || Drawer.isOpen() || Modal.isOpen() || (typeof Assistente !== 'undefined' && Assistente.isOpen())) return;
 
       this.timeElapsed += 1;
       const progressPercent = Math.min(100, (this.timeElapsed / this.durationSeconds) * 100);

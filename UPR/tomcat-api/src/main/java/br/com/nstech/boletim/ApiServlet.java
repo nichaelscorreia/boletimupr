@@ -167,6 +167,16 @@ public class ApiServlet extends HttpServlet {
             return;
         }
 
+        if (q.name.startsWith("config.")) {
+            try {
+                garantirTabelaConfig();
+            } catch (Exception e) {
+                log("Não foi possível preparar a tabela de configurações", e);
+                send(resp, 500, error("Tabela de configurações indisponível: " + e.getMessage()));
+                return;
+            }
+        }
+
         final NamedSql sql = registry.parse(q.builder.build(values));
         long start = System.currentTimeMillis();
         try {
@@ -182,6 +192,39 @@ public class ApiServlet extends HttpServlet {
             String msg = e instanceof SQLException ? e.getMessage() : "Erro interno";
             send(resp, 500, "{\"error\":" + Json.quote(msg == null ? "Erro interno" : msg.trim())
                 + ",\"ref\":\"" + ref + "\"}");
+        }
+    }
+
+    // NST_PAINEL_CONFIG é criada automaticamente no primeiro uso (script equivalente em ddl/nst_painel_config.sql)
+    private volatile boolean tabelaConfigOk;
+
+    private synchronized void garantirTabelaConfig() throws Exception {
+        if (tabelaConfigOk) return;
+        Pooled p = pool.borrow();
+        boolean broken = false;
+        try {
+            java.sql.Statement st = p.con.createStatement();
+            try {
+                ResultSet rs = st.executeQuery("select count(*) from user_tables where table_name = 'NST_PAINEL_CONFIG'");
+                rs.next();
+                boolean existe = rs.getInt(1) > 0;
+                rs.close();
+                if (!existe) {
+                    st.execute("create table nst_painel_config ("
+                        + "chave varchar2(60) not null, valor varchar2(400), alterado_por varchar2(100), "
+                        + "alterado_em date default sysdate not null, "
+                        + "constraint nst_painel_config_pk primary key (chave))");
+                    log("Tabela NST_PAINEL_CONFIG criada");
+                }
+                tabelaConfigOk = true;
+            } finally {
+                st.close();
+            }
+        } catch (SQLException e) {
+            broken = !isAlive(p.con);
+            throw e;
+        } finally {
+            pool.release(p, broken);
         }
     }
 

@@ -3,6 +3,9 @@
 const Assistente = {
   conversaId: null,
   aguardando: false,
+  configurado: false,   // há chave da API no servidor
+  habilitado: false,    // ligado pelo administrador
+  podeAlterar: false,   // este dispositivo é administrador
   falarRespostas: false,
   reconhecimento: null,
   ouvindo: false,
@@ -17,12 +20,62 @@ const Assistente = {
   async iniciar() {
     try {
       const r = await fetch('/api/assistente/status');
-      if (!r.ok || !(await r.json()).ativo) return;
+      if (!r.ok) return;
+      const st = await r.json();
+      this.configurado = !!st.configurado;
+      this.habilitado = !!st.habilitado;
+      this.podeAlterar = !!st.podeAlterar;
     } catch (e) {
       return;
     }
     try { this.falarRespostas = localStorage.getItem('assistenteVoz') === '1'; } catch (e) { /* sem storage */ }
-    this.montar();
+    if (this.configurado && this.habilitado) this.montar();
+  },
+
+  // Mostra/esconde o botão conforme o assistente está ligado ou desligado
+  aplicarEstado() {
+    if (this.habilitado) {
+      this.montar();
+      document.getElementById('assist-botao').classList.remove('desativado');
+      document.getElementById('assist-painel').classList.remove('desativado');
+    } else if (document.getElementById('assist-botao')) {
+      this.fechar();
+      document.getElementById('assist-botao').classList.add('desativado');
+      document.getElementById('assist-painel').classList.add('desativado');
+    }
+  },
+
+  // Bloco exibido no painel de administração (Dispositivos com acesso)
+  controleAdmin() {
+    if (!this.configurado || !this.podeAlterar) return '';
+    return `
+      <div class="assist-admin ${this.habilitado ? 'ligado' : 'desligado'}">
+        <div>
+          <b>Assistente de dados (perguntas por texto e voz)</b>
+          <small>${this.habilitado
+            ? 'Ligado: o botão "Pergunte" aparece para todos os dispositivos liberados. Cada pergunta tem custo.'
+            : 'Desligado: ninguém consegue fazer perguntas e não há custo.'}</small>
+        </div>
+        <button type="button" class="acesso-acao ${this.habilitado ? 'bloquear' : 'liberar'}"
+                onclick="Assistente.definirHabilitado(${!this.habilitado})">${this.habilitado ? 'Desligar' : 'Ligar'}</button>
+      </div>`;
+  },
+
+  async definirHabilitado(valor) {
+    try {
+      const res = await fetch('/api/assistente/habilitar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ habilitado: valor })
+      });
+      const r = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(r.error || 'Não foi possível alterar.');
+      this.habilitado = valor;
+      this.aplicarEstado();
+    } catch (err) {
+      alert(err.message);
+    }
+    if (typeof Acesso !== 'undefined') Acesso.renderAdmin();
   },
 
   isOpen() {
@@ -34,6 +87,7 @@ const Assistente = {
   },
 
   montar() {
+    if (document.getElementById('assist-botao')) return; // já montado
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const temVoz = !!SR;
     const temFala = 'speechSynthesis' in window;
@@ -145,6 +199,10 @@ const Assistente = {
       pensando.remove();
       if (!res.ok) {
         this.adicionar('assist-bot assist-erro', this.esc(r.error || r.acesso || 'Não foi possível responder agora.'));
+        if (r.desativado) { // o administrador desligou enquanto este painel estava aberto
+          this.habilitado = false;
+          setTimeout(() => this.aplicarEstado(), 2500);
+        }
         return;
       }
       this.conversaId = r.conversaId;

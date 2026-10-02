@@ -95,6 +95,12 @@ module.exports = {
     registrarUso: (hash, ip) => q('acesso.registrarUso', { hash, ip })
   },
 
+  // --- CONFIGURAÇÕES DO PAINEL (ex.: assistente ligado/desligado) ---
+  config: {
+    obter: (chave) => q('config.obter', { chave }),
+    definir: (chave, valor, por) => q('config.definir', { chave, valor, por })
+  },
+
   // --- MÓDULO LABORATÓRIO (INDICADORES INDUSTRIAIS) ---
   laboratorio: {
     indicadores: (safra = 54) => q('laboratorio.indicadores', { safra }),

@@ -40,6 +40,7 @@ const App = {
 
     // Atalhos de Teclado
     document.addEventListener('keydown', (e) => {
+      if (TVController.digitando(e)) return; // setas movem o cursor no campo, não trocam de aba
       if (e.key === 'ArrowRight' && !Drawer.isOpen() && !Modal.isOpen()) {
         this.navigateTab(1);
       } else if (e.key === 'ArrowLeft' && !Drawer.isOpen() && !Modal.isOpen()) {

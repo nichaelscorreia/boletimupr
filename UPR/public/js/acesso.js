@@ -272,6 +272,7 @@ const Acesso = {
       </div>`).join('');
 
     el.innerHTML = `
+      ${typeof Assistente !== 'undefined' ? Assistente.controleAdmin() : ''}
       <div class="acesso-filtros">
         ${aba('pendente', 'Aguardando', cont.pendente)}
         ${aba('aprovado', 'Liberados', cont.aprovado)}

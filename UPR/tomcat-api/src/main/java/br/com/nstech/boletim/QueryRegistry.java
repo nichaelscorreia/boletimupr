@@ -149,6 +149,12 @@ final class QueryRegistry {
         command("acesso.excluir", "Remove um dispositivo da lista", id);
         command("acesso.registrarUso", "Atualiza a data/IP do último acesso", hash, ip);
 
+        // --- CONFIGURAÇÕES DO PAINEL (tabela NST_PAINEL_CONFIG, criada automaticamente) ---
+        Spec chave = Spec.pattern("chave", true, "[a-z0-9_.]{1,60}", "nome da configuração");
+        simple("config.obter", "Valor de uma configuração do painel", false, chave);
+        command("config.definir", "Grava uma configuração do painel", chave,
+            Spec.text("valor", true, 400, "valor"), por);
+
         // Falha na subida (e não na primeira requisição) se algum SQL com variantes estiver faltando
         for (String f : new String[] {"agricola_resumo", "agricola_detalheFornecedor", "agricola_detalheVariedade",
                                       "frota_detalheCarregamento", "frota_detalheTransporte"}) {
