@@ -33,6 +33,7 @@ Glossário:
 - Toneladas de cana = peso líquido entregue na balança (t). Hoje/Ontem = dia de movimento; Semana = de segunda-feira até hoje; Sem.Ant = semana anterior; Safra = desde o início da safra; Média/Dia = média diária da safra; Estimativa = projeção do dia pelo ritmo atual.
 - ATR (kg/t), PCC = pol da cana (%), Brix (%), Fibra (%), Pureza (%), AR = açúcares redutores (%), TQ = tempo entre a queima e a entrega (h), Impureza vegetal e mineral (kg/t), TCH = toneladas de cana por hectare.
 - Tipos de corte: COLHEDORA / mecanizado e MANUAL. Grupos de cana: Própria (da usina), Acionistas, Triunfo, Sinimbú e Fornecedores; Cana Total é a soma.
+- Produção industrial (histórico diário e semanal): etanol hidratado e anidro em litros; açúcar em sacos de 50 kg; produção equivalente = os três produtos (anidro, hidratado e açúcar) convertidos em sacos de açúcar.
 - Planejamento: planejado = volume programado até hoje; % evolução = colhido ÷ estimado da safra; % cumprimento = colhido ÷ planejado (pode passar de 100%); fora do plano = colhido além do programado para o lote.
 - Datas sempre no formato dd/mm/aaaa ao chamar ferramentas.
 

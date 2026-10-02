@@ -46,9 +46,9 @@ const ProducaoView = {
                 <th style="text-align: right;">Pureza (%)</th>
                 <th style="text-align: right;">Fibra (%)</th>
                 <th style="text-align: center;">TQ</th>
-                <th style="text-align: right;">Prod. Equiv. (t)</th>
-                <th style="text-align: right;">Hidratado (m³)</th>
-                <th style="text-align: right;">Anidro (m³)</th>
+                <th style="text-align: right;">Prod. Equiv. (scs)</th>
+                <th style="text-align: right;">Hidratado (L)</th>
+                <th style="text-align: right;">Anidro (L)</th>
                 <th style="text-align: right; color: #34d399;">Açúcar (scs)</th>
               </tr>
             </thead>
@@ -260,9 +260,9 @@ const ProducaoSemanalView = {
                 <th style="text-align: right;">Pureza (%)</th>
                 <th style="text-align: right;">Fibra (%)</th>
                 <th style="text-align: center;">TQ</th>
-                <th style="text-align: right;">Prod. Equiv. (t)</th>
-                <th style="text-align: right;">Hidratado (m³)</th>
-                <th style="text-align: right;">Anidro (m³)</th>
+                <th style="text-align: right;">Prod. Equiv. (scs)</th>
+                <th style="text-align: right;">Hidratado (L)</th>
+                <th style="text-align: right;">Anidro (L)</th>
                 <th style="text-align: right; color: #34d399;">Açúcar (scs)</th>
               </tr>
             </thead>

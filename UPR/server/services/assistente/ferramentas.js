@@ -357,8 +357,9 @@ async function executar(nome, input = {}) {
       const d = dadosDaRota(await chamarRota(rotas.producao, semanal ? '/semanal' : '/'));
       const medidas = [['cana_entrada_t', 'canaEntrada'], ['cana_moida_t', 'canaMoida'], ['eficiencia', 'eficiencia'], ...QUALIDADE,
         ['prod_equivalente', 'prodEquiv'], ['hidratado', 'prodHidratado'], ['anidro', 'prodAnidro'], ['acucar', 'prodAcucar']];
-      const unidades = 'cana em toneladas; hidratado e anidro em litros; acucar em sacos de 50 kg; ' +
-        'prod_equivalente = produção equivalente (unidade não confirmada: informe o número sem unidade)';
+      const unidades = 'cana em toneladas; no histórico diário/semanal, hidratado e anidro em litros; acucar em sacos de 50 kg; ' +
+        'prod_equivalente = produção equivalente em sacos de açúcar (etanol anidro, etanol hidratado e açúcar convertidos em sacos de açúcar). ' +
+        'Na produção por hora de hoje a unidade do etanol não está confirmada: informe o número sem unidade';
       if (semanal) return { posicao: d.dathor, unidades, semanas: tab(d.semanas, [['semana', 'sem'], ['periodo', 'periodo'], ...medidas]) };
       // As três produções horárias de hoje numa tabela só (uma linha por hora)
       const porHora = {};
