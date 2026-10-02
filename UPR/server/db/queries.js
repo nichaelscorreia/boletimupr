@@ -101,6 +101,13 @@ module.exports = {
     definir: (chave, valor, por) => q('config.definir', { chave, valor, por })
   },
 
+  // --- REGISTRO DAS PERGUNTAS AO ASSISTENTE (textos em base64url) ---
+  assistente: {
+    logListar: (limite = 50) => q('assistente.logListar', { limite }),
+    logRegistrar: (dados) => q('assistente.logRegistrar', dados),
+    logResposta: (id, parte) => q('assistente.logResposta', { id, parte })
+  },
+
   // --- MÓDULO LABORATÓRIO (INDICADORES INDUSTRIAIS) ---
   laboratorio: {
     indicadores: (safra = 54) => q('laboratorio.indicadores', { safra }),

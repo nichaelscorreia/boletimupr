@@ -4,6 +4,7 @@ const router = express.Router();
 const config = require('../config');
 const assistente = require('../services/assistente');
 const painelConfig = require('../services/painelConfig');
+const registro = require('../services/assistente/registro');
 
 const CHAVE_ATIVO = 'assistente.ativo'; // 'S' (padrão) ou 'N', gravado pelo administrador
 
@@ -11,6 +12,11 @@ const CHAVE_ATIVO = 'assistente.ativo'; // 'S' (padrão) ou 'N', gravado pelo ad
 const dono = (req) => (req.dispositivo ? `d${req.dispositivo.id}` : `ip${req.ip}`);
 // Administrador = dispositivo marcado como admin (com o controle de acesso desligado, qualquer um: uso local)
 const ehAdmin = (req) => (config.acesso.ativo ? !!(req.dispositivo && req.dispositivo.admin) : true);
+const UUID = /^[0-9a-f-]{36}$/;
+const ipValido = (ip) => {
+  const limpo = String(ip || '').replace(/^::ffff:/, '');
+  return /^[0-9A-Fa-f:.]{1,45}$/.test(limpo) ? limpo : undefined;
+};
 const habilitado = async () => (await painelConfig.obter(CHAVE_ATIVO, 'S')) !== 'N';
 
 // configurado = há chave da API do Claude no servidor; habilitado = ligado pelo administrador
@@ -42,7 +48,22 @@ router.post('/perguntar', async (req, res) => {
   if (pergunta.length > 1000) return res.status(400).json({ error: 'Pergunta longa demais (máximo 1.000 caracteres).' });
   const conversaId = typeof req.body.conversaId === 'string' ? req.body.conversaId : null;
 
+  const inicio = Date.now();
   const r = await assistente.perguntar({ pergunta, conversaId, dono: dono(req) });
+  // Toda pergunta fica registrada no Oracle (quem, quando, pergunta e resposta), inclusive as não respondidas
+  registro.registrar({
+    dispositivo: req.dispositivo ? req.dispositivo.id : undefined,
+    quem: req.dispositivo ? `${req.dispositivo.nome} (${req.dispositivo.descricao})` : `sem identificação (${req.ip})`,
+    ip: ipValido(req.ip),
+    conversa: UUID.test(r.conversaId || conversaId || '') ? (r.conversaId || conversaId) : undefined,
+    pergunta,
+    resposta: r.erro || r.resposta,
+    ok: !r.erro,
+    consultas: [...new Set(r.consultas || [])],
+    modelo: config.assistente.modelo,
+    segundos: (Date.now() - inicio) / 1000,
+    uso: r.uso
+  });
   if (r.erro) return res.status(r.status || 500).json({ error: r.erro });
   res.json({ conversaId: r.conversaId, resposta: r.resposta, consultas: [...new Set(r.consultas)] });
 });

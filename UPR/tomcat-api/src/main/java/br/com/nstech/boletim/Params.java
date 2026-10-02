@@ -1,8 +1,10 @@
 package br.com.nstech.boletim;
 
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -11,6 +13,7 @@ final class Params {
 
     private static final Pattern DATE = Pattern.compile("\\d{2}/\\d{2}/\\d{4}");
     private static final Pattern INT = Pattern.compile("-?\\d{1,9}");
+    private static final Pattern BASE64URL = Pattern.compile("[A-Za-z0-9_-]*");
 
     private Params() {
     }
@@ -27,7 +30,7 @@ final class Params {
         }
     }
 
-    enum Type { INT, DATE, ENUM, TEXT, PATTERN }
+    enum Type { INT, DATE, ENUM, TEXT, PATTERN, BASE64 }
 
     /** Definição de um parâmetro de consulta. */
     static final class Spec {
@@ -72,6 +75,16 @@ final class Params {
             return s;
         }
 
+        /**
+         * Texto longo enviado em base64url (UTF-8): aceita quebras de linha e não sofre com os limites
+         * de tamanho da URL. maxLen vale para o texto já decodificado.
+         */
+        static Spec base64Text(String name, boolean required, int maxLen, String doc) {
+            Spec s = new Spec(name, Type.BASE64, required, doc);
+            s.max = maxLen;
+            return s;
+        }
+
         /** Texto que precisa casar inteiro com a expressão regular. */
         static Spec pattern(String name, boolean required, String regex, String doc) {
             Spec s = new Spec(name, Type.PATTERN, required, doc);
@@ -105,6 +118,20 @@ final class Params {
                 case PATTERN:
                     if (!pattern.matcher(raw).matches()) throw bad("em formato inválido");
                     return raw;
+                case BASE64:
+                    if (!BASE64URL.matcher(raw).matches()) throw bad("deve estar em base64url");
+                    String texto;
+                    try {
+                        texto = new String(Base64.getUrlDecoder().decode(raw), StandardCharsets.UTF_8);
+                    } catch (IllegalArgumentException e) {
+                        throw bad("deve estar em base64url");
+                    }
+                    if (texto.length() > max) throw bad("deve ter no máximo " + max + " caracteres");
+                    for (int i = 0; i < texto.length(); i++) {
+                        char c = texto.charAt(i);
+                        if (Character.isISOControl(c) && c != '\n' && c != '\r' && c != '\t') throw bad("contém caracteres inválidos");
+                    }
+                    return texto;
                 default:
                     if (!values.contains(raw)) throw bad("deve ser um de " + values);
                     return raw;
@@ -122,6 +149,7 @@ final class Params {
                 case DATE: sb.append("data dd/mm/aaaa"); break;
                 case TEXT: sb.append("texto até ").append(max).append(" caracteres"); break;
                 case PATTERN: sb.append("texto no formato ").append(pattern.pattern()); break;
+                case BASE64: sb.append("texto em base64url até ").append(max).append(" caracteres"); break;
                 default: sb.append(values); break;
             }
             sb.append(required ? " (obrigatório)" : " (opcional)");

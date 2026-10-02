@@ -189,18 +189,20 @@ async function perguntar({ pergunta, conversaId, dono }) {
       consultas, uso
     };
   } catch (err) {
+    // Leva junto o que já foi consumido, para o registro da pergunta
+    const falha = (erro, status) => ({ erro, status, conversaId: id, consultas, uso });
     conversa.encerrada = true; // histórico pode ter ficado incompleto: a próxima pergunta abre conversa nova
-    if (err instanceof Anthropic.RateLimitError) return { erro: 'Assistente ocupado no momento. Tente em instantes.', status: 503 };
+    if (err instanceof Anthropic.RateLimitError) return falha('Assistente ocupado no momento. Tente em instantes.', 503);
     if (err instanceof Anthropic.AuthenticationError) {
       console.error('Assistente: chave da API do Claude inválida');
-      return { erro: 'Assistente não configurado corretamente.', status: 503 };
+      return falha('Assistente não configurado corretamente.', 503);
     }
     if (err instanceof Anthropic.APIError) {
       console.error(`Assistente: erro da API do Claude ${err.status}: ${err.message}`);
-      return { erro: 'O assistente não conseguiu responder agora. Tente novamente.', status: 502 };
+      return falha('O assistente não conseguiu responder agora. Tente novamente.', 502);
     }
     console.error('Assistente: erro inesperado:', err);
-    return { erro: 'O assistente não conseguiu responder agora. Tente novamente.', status: 500 };
+    return falha('O assistente não conseguiu responder agora. Tente novamente.', 500);
   } finally {
     conversa.ocupada = false;
     console.log(`🤖 Assistente: ${((Date.now() - t0) / 1000).toFixed(1)}s, consultas=[${consultas.join(', ')}], ` +

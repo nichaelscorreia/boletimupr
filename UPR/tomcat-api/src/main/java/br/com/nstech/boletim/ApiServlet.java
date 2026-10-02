@@ -167,14 +167,13 @@ public class ApiServlet extends HttpServlet {
             return;
         }
 
-        if (q.name.startsWith("config.")) {
-            try {
-                garantirTabelaConfig();
-            } catch (Exception e) {
-                log("Não foi possível preparar a tabela de configurações", e);
-                send(resp, 500, error("Tabela de configurações indisponível: " + e.getMessage()));
-                return;
-            }
+        try {
+            if (q.name.startsWith("config.")) garantirTabela("NST_PAINEL_CONFIG", DDL_CONFIG);
+            else if (q.name.startsWith("assistente.")) garantirTabela("NST_ASSISTENTE_LOG", DDL_ASSISTENTE_LOG);
+        } catch (Exception e) {
+            log("Não foi possível preparar a tabela de apoio de " + q.name, e);
+            send(resp, 500, error("Tabela de apoio indisponível: " + e.getMessage()));
+            return;
         }
 
         final NamedSql sql = registry.parse(q.builder.build(values));
@@ -184,39 +183,54 @@ public class ApiServlet extends HttpServlet {
                 ? execute(sql, values, true)
                 : cache.get(q.name + values, q.cacheable, () -> execute(sql, values));
             long ms = System.currentTimeMillis() - start;
-            if (ms > 5000) log("Consulta lenta " + q.name + " " + values + ": " + ms + " ms");
+            if (ms > 5000) log("Consulta lenta " + q.name + (q.name.startsWith("assistente.") ? "" : " " + values) + ": " + ms + " ms");
             send(resp, 200, body);
         } catch (Exception e) {
             String ref = UUID.randomUUID().toString().substring(0, 8);
-            log("Erro [" + ref + "] na consulta " + q.name + " " + values, e);
+            // O registro do assistente leva o texto das perguntas/respostas: não vai para o log do Tomcat
+            log("Erro [" + ref + "] na consulta " + q.name + (q.name.startsWith("assistente.") ? "" : " " + values), e);
             String msg = e instanceof SQLException ? e.getMessage() : "Erro interno";
             send(resp, 500, "{\"error\":" + Json.quote(msg == null ? "Erro interno" : msg.trim())
                 + ",\"ref\":\"" + ref + "\"}");
         }
     }
 
-    // NST_PAINEL_CONFIG é criada automaticamente no primeiro uso (script equivalente em ddl/nst_painel_config.sql)
-    private volatile boolean tabelaConfigOk;
+    // Tabelas de apoio criadas automaticamente no primeiro uso (scripts equivalentes na pasta ddl/)
+    private final java.util.Set<String> tabelasOk = java.util.Collections.synchronizedSet(new java.util.HashSet<String>());
 
-    private synchronized void garantirTabelaConfig() throws Exception {
-        if (tabelaConfigOk) return;
+    private static final String[] DDL_CONFIG = {
+        "create table nst_painel_config ("
+            + "chave varchar2(60) not null, valor varchar2(400), alterado_por varchar2(100), "
+            + "alterado_em date default sysdate not null, "
+            + "constraint nst_painel_config_pk primary key (chave))"
+    };
+
+    private static final String[] DDL_ASSISTENTE_LOG = {
+        "create table nst_assistente_log ("
+            + "id varchar2(36) not null, datahora date default sysdate not null, id_dispositivo number(10), "
+            + "quem varchar2(200), ip varchar2(45), conversa varchar2(36), pergunta varchar2(4000), resposta clob, "
+            + "situacao varchar2(10), consultas varchar2(400), modelo varchar2(60), segundos number(6), "
+            + "tok_entrada number(10), tok_saida number(10), tok_cache_lido number(10), tok_cache_gravado number(10), "
+            + "constraint nst_assistente_log_pk primary key (id))",
+        "create index nst_assistente_log_i1 on nst_assistente_log (datahora)"
+    };
+
+    private synchronized void garantirTabela(String tabela, String[] ddl) throws Exception {
+        if (tabelasOk.contains(tabela)) return;
         Pooled p = pool.borrow();
         boolean broken = false;
         try {
             java.sql.Statement st = p.con.createStatement();
             try {
-                ResultSet rs = st.executeQuery("select count(*) from user_tables where table_name = 'NST_PAINEL_CONFIG'");
+                ResultSet rs = st.executeQuery("select count(*) from user_tables where table_name = '" + tabela + "'");
                 rs.next();
                 boolean existe = rs.getInt(1) > 0;
                 rs.close();
                 if (!existe) {
-                    st.execute("create table nst_painel_config ("
-                        + "chave varchar2(60) not null, valor varchar2(400), alterado_por varchar2(100), "
-                        + "alterado_em date default sysdate not null, "
-                        + "constraint nst_painel_config_pk primary key (chave))");
-                    log("Tabela NST_PAINEL_CONFIG criada");
+                    for (String comando : ddl) st.execute(comando);
+                    log("Tabela " + tabela + " criada");
                 }
-                tabelaConfigOk = true;
+                tabelasOk.add(tabela);
             } finally {
                 st.close();
             }

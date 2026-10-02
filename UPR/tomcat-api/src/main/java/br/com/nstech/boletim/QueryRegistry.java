@@ -155,6 +155,27 @@ final class QueryRegistry {
         command("config.definir", "Grava uma configuração do painel", chave,
             Spec.text("valor", true, 400, "valor"), por);
 
+        // --- REGISTRO DAS PERGUNTAS AO ASSISTENTE (tabela NST_ASSISTENTE_LOG, criada automaticamente) ---
+        Spec idLog = Spec.pattern("id", true, "[0-9a-f-]{36}", "identificador do registro (UUID)");
+        command("assistente.logRegistrar", "Registra uma pergunta feita ao assistente", idLog,
+            Spec.integer("dispositivo", false, 1, 999999999, "ID do dispositivo que perguntou"),
+            Spec.text("quem", true, 200, "quem perguntou (nome e dispositivo)"),
+            ip,
+            Spec.pattern("conversa", false, "[0-9a-f-]{36}", "conversa a que a pergunta pertence"),
+            Spec.base64Text("pergunta", true, 1000, "pergunta feita"),
+            Spec.oneOf("situacao", "OK = respondida, ERRO = não respondida", "OK", "ERRO").orDefault("OK"),
+            Spec.text("consultas", false, 400, "fontes de dados consultadas"),
+            Spec.text("modelo", false, 60, "modelo que respondeu"),
+            Spec.integer("segundos", false, 0, 3600, "tempo de resposta"),
+            Spec.integer("tokEntrada", false, 0, 999999999, "tokens de entrada"),
+            Spec.integer("tokSaida", false, 0, 999999999, "tokens de saída"),
+            Spec.integer("tokCacheLido", false, 0, 999999999, "tokens lidos do cache"),
+            Spec.integer("tokCacheGravado", false, 0, 999999999, "tokens gravados no cache"));
+        simple("assistente.logListar", "Últimas perguntas feitas ao assistente (mais recentes primeiro)", false,
+            Spec.integer("limite", false, 1, 500, "quantidade de registros").orDefault(50));
+        command("assistente.logResposta", "Acrescenta um trecho da resposta ao registro", idLog,
+            Spec.base64Text("parte", true, 1000, "trecho da resposta"));
+
         // Falha na subida (e não na primeira requisição) se algum SQL com variantes estiver faltando
         for (String f : new String[] {"agricola_resumo", "agricola_detalheFornecedor", "agricola_detalheVariedade",
                                       "frota_detalheCarregamento", "frota_detalheTransporte"}) {
