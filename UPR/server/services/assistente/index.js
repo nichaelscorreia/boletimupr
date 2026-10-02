@@ -21,9 +21,13 @@ Regras de precisão:
 - Se a pergunta não puder ser respondida com as ferramentas disponíveis, ou a ferramenta devolver erro ou vazio, diga isso claramente e, se fizer sentido, sugira uma pergunta próxima que você consegue responder.
 - Sempre deixe claro o período (datas) e a unidade de cada número.
 - Quando a pergunta for ambígua quanto ao período, use o mais natural (ex.: "hoje", "safra") e diga qual usou.
-- Em rankings (ex.: melhor ATR), ignore linhas de TOTAL, informe também a tonelagem de cada item e alerte quando um destaque tiver volume muito pequeno.
+- Em rankings (ex.: melhor ATR), peça os dados já ordenados (ordenar_por), confira a ordem antes de escrever, ignore linhas de TOTAL, informe também a tonelagem de cada item e alerte quando um destaque tiver volume muito pequeno.
 - Para totais de uma fazenda ou fornecedor que aparecem em mais de uma linha (ex.: corte manual e mecanizado), some as toneladas e, para indicadores de qualidade, use a média ponderada pelas toneladas.
-- Toda conta que não venha pronta nos dados (soma, diferença, média, percentual) deve ser feita com a ferramenta calcular, nunca de cabeça. Só informe um número calculado depois de obtê-lo pela ferramenta.
+- Toda conta que não venha pronta nos dados (soma, diferença, média, percentual) deve ser feita com a ferramenta calcular, nunca de cabeça. Só informe um número calculado depois de obtê-lo pela ferramenta; não escreva valores aproximados ("cerca de", "aproximadamente") somados de cabeça.
+
+Formato dos dados das ferramentas:
+- As listas vêm como tabelas compactas: "colunas" traz os nomes, na ordem, e cada item de "linhas" é uma linha com os valores na mesma ordem. Leia sempre o valor pela posição da coluna correspondente; null significa sem dado.
+- Sufixo _t = toneladas; pct_ = percentual; min_ = minutos.
 
 Glossário:
 - Toneladas de cana = peso líquido entregue na balança (t). Hoje/Ontem = dia de movimento; Semana = de segunda-feira até hoje; Sem.Ant = semana anterior; Safra = desde o início da safra; Média/Dia = média diária da safra; Estimativa = projeção do dia pelo ritmo atual.
@@ -139,11 +143,16 @@ async function perguntar({ pergunta, conversaId, dono }) {
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
         cache_control: { type: 'ephemeral' },
-        system: INSTRUCOES,
+        // Ponto de cache próprio: ferramentas + instruções são reaproveitadas entre conversas diferentes
+        system: [{ type: 'text', text: INSTRUCOES, cache_control: { type: 'ephemeral' } }],
         tools: DEFINICOES,
         messages: conversa.messages
       });
 
+      if (process.env.ASSISTENTE_DEBUG) {
+        console.log(`   · chamada ${i + 1}: entrada=${resp.usage.input_tokens} saída=${resp.usage.output_tokens} ` +
+          `cache lido=${resp.usage.cache_read_input_tokens} cache gravado=${resp.usage.cache_creation_input_tokens} fim=${resp.stop_reason}`);
+      }
       uso.entrada += resp.usage.input_tokens || 0;
       uso.saida += resp.usage.output_tokens || 0;
       uso.cacheLeitura += resp.usage.cache_read_input_tokens || 0;
