@@ -32,8 +32,9 @@ import javax.mail.util.ByteArrayDataSource;
 import javax.servlet.ServletContext;
 
 /**
- * E-mail diário dos fretistas: cada fornecedor recebe SOMENTE a sua produção (transporte e colheita) do dia de
- * referência, com quebra por tipo de equipamento, totais por tipo e total geral.
+ * E-mail diário dos fretistas: cada fornecedor recebe SOMENTE a sua produção (transporte e colheita), em viagens
+ * e toneladas, no dia de referência, na semana, no mês e na safra, com quebra por tipo de equipamento, totais por
+ * tipo e total geral. Só recebe quem produziu no dia de referência.
  *
  * Envios ficam registrados em NST_EMAIL_ENVIO: um fretista não recebe duas vezes o mesmo dia (a menos que se
  * peça reenvio). Com EMAIL_DESTINO_TESTE preenchido, todos os e-mails vão só para esse endereço.
@@ -45,27 +46,39 @@ final class EmailFretistas {
     private static final String AZUL = "#1c2260";
     private static final String VERDE = "#2e9e5b";
 
-    static final class Equip {
+    /** Períodos exibidos, na ordem das colunas do e-mail. */
+    private static final String[] PERIODOS = {"DIA", "SEMANA", "MES", "SAFRA"};
+    private static final String[] ROTULOS = {"Dia", "Semana", "Mês", "Safra"};
+    private static final int DIA = 0;
+
+    /** Viagens e toneladas em cada período (índices de PERIODOS). */
+    static class Producao {
+        final int[] viagens = new int[PERIODOS.length];
+        final double[] toneladas = new double[PERIODOS.length];
+
+        void somar(Producao o) {
+            for (int i = 0; i < PERIODOS.length; i++) {
+                viagens[i] += o.viagens[i];
+                toneladas[i] += o.toneladas[i];
+            }
+        }
+    }
+
+    static final class Equip extends Producao {
         String codigo;
         String descricao;
-        int viagens;
-        double toneladas;
     }
 
-    static final class Tipo {
+    static final class Tipo extends Producao {
         String descricao;
         final List<Equip> equipamentos = new ArrayList<Equip>();
-        int viagens;
-        double toneladas;
     }
 
-    static final class Fretista {
+    static final class Fretista extends Producao {
         int codigo;
         String nome;
         String emailCadastro;
         final Map<String, Tipo> tipos = new LinkedHashMap<String, Tipo>();
-        int viagens;
-        double toneladas;
     }
 
     static final class Resultado {
@@ -103,7 +116,10 @@ final class EmailFretistas {
 
     // ---------------------------------------------------------------- dados
 
-    /** Produção do dia de referência (dd/mm/aaaa), agrupada por fretista -> tipo de equipamento -> equipamento. */
+    /**
+     * Produção até o dia de referência (dd/mm/aaaa), agrupada por fretista -> tipo de equipamento -> equipamento.
+     * Traz só os fretistas com produção no dia; deles, todos os equipamentos que já produziram na safra.
+     */
     List<Fretista> carregar(String dataRef) throws Exception {
         Map<Integer, Fretista> mapa = new LinkedHashMap<Integer, Fretista>();
         Pooled p = pool.borrow();
@@ -143,13 +159,13 @@ final class EmailFretistas {
                         Equip e = new Equip();
                         e.codigo = limpo(rs.getString("COD_EQUIPAMENTO"), "");
                         e.descricao = limpo(rs.getString("EQUIPAMENTO"), "");
-                        e.viagens = rs.getInt("VIAGENS");
-                        e.toneladas = rs.getDouble("PESOLIQUIDO");
+                        for (int i = 0; i < PERIODOS.length; i++) {
+                            e.viagens[i] = rs.getInt("VIAGENS" + PERIODOS[i]);
+                            e.toneladas[i] = rs.getDouble("PESOLIQUIDO" + PERIODOS[i]);
+                        }
                         t.equipamentos.add(e);
-                        t.viagens += e.viagens;
-                        t.toneladas += e.toneladas;
-                        f.viagens += e.viagens;
-                        f.toneladas += e.toneladas;
+                        t.somar(e);
+                        f.somar(e);
                     }
                 } finally {
                     rs.close();
@@ -163,7 +179,11 @@ final class EmailFretistas {
         } finally {
             pool.release(p, broken);
         }
-        return new ArrayList<Fretista>(mapa.values());
+        List<Fretista> lista = new ArrayList<Fretista>();
+        for (Fretista f : mapa.values()) {
+            if (f.viagens[DIA] > 0 || f.toneladas[DIA] > 0) lista.add(f);
+        }
+        return lista;
     }
 
     // ---------------------------------------------------------------- envio
@@ -334,15 +354,40 @@ final class EmailFretistas {
         return new DecimalFormat("#,##0", BR).format(v);
     }
 
+    /** Intervalo de cada período até o dia de referência (semana começa na segunda-feira, como no SQL). */
+    private static String[] intervalos(String dataRef) {
+        java.time.format.DateTimeFormatter completo = java.time.format.DateTimeFormatter.ofPattern("dd/MM/uuuu");
+        java.time.format.DateTimeFormatter curto = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+        java.time.LocalDate d = java.time.LocalDate.parse(dataRef, completo);
+        java.time.LocalDate segunda = d.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        return new String[] {
+            curto.format(d),
+            curto.format(segunda) + " a " + curto.format(d),
+            curto.format(d.withDayOfMonth(1)) + " a " + curto.format(d),
+            "até " + curto.format(d)
+        };
+    }
+
+    private static void celulasProducao(StringBuilder h, Producao p, String estilo) {
+        for (int i = 0; i < PERIODOS.length; i++) {
+            String borda = "border-left:1px solid #e5e7eb;";
+            h.append("<td style=\"").append(estilo).append(borda).append("\">").append(inteiro(p.viagens[i])).append("</td>")
+             .append("<td style=\"").append(estilo).append("\">").append(ton(p.toneladas[i])).append("</td>");
+        }
+    }
+
     String html(Fretista f, String dataRef) {
-        String celula = "padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:14px;color:#1f2937;";
+        String[] intervalos = intervalos(dataRef);
+        String celula = "padding:7px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#1f2937;";
         String num = celula + "text-align:right;white-space:nowrap;";
-        StringBuilder h = new StringBuilder(4096);
+        String cab = "padding:6px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;font-weight:bold;";
+        int colunas = 1 + 2 * PERIODOS.length;
+        StringBuilder h = new StringBuilder(8192);
         h.append("<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\">")
          .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>")
          .append("<body style=\"margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;\">")
          .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6;\"><tr><td align=\"center\" style=\"padding:20px 10px;\">")
-         .append("<table role=\"presentation\" width=\"640\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;\">");
+         .append("<table role=\"presentation\" width=\"800\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:800px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;\">");
 
         if (modoTeste()) {
             h.append("<tr><td style=\"background:#fef3c7;color:#92400e;padding:10px 24px;font-size:13px;\">")
@@ -358,43 +403,65 @@ final class EmailFretistas {
          .append("<div style=\"font-size:20px;font-weight:bold;color:").append(AZUL).append(";\">Sua produção de ").append(esc(dataRef)).append("</div>")
          .append("<div style=\"font-size:14px;color:#4b5563;margin-top:6px;\">Fretista: <b style=\"color:#111827;\">")
          .append(esc(f.nome)).append("</b> (código ").append(f.codigo).append(")</div>")
-         .append("<div style=\"font-size:13px;color:#6b7280;margin-top:4px;\">Transporte e colheita de cana realizados pelos seus equipamentos.</div>")
+         .append("<div style=\"font-size:13px;color:#6b7280;margin-top:4px;\">Transporte e colheita de cana realizados pelos seus equipamentos: ")
+         .append("viagens e toneladas no dia, na semana, no mês e na safra.</div>")
          .append("</td></tr>");
 
         for (Tipo t : f.tipos.values()) {
             h.append("<tr><td style=\"padding:14px 24px 0;\">")
              .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:6px;border-collapse:separate;overflow:hidden;\">")
-             .append("<tr><td colspan=\"3\" style=\"background:").append(AZUL).append(";color:#ffffff;padding:9px 12px;font-size:14px;font-weight:bold;\">")
-             .append(esc(t.descricao)).append("</td></tr>")
-             .append("<tr>")
-             .append("<td style=\"padding:7px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;font-weight:bold;\">EQUIPAMENTO</td>")
-             .append("<td width=\"64\" style=\"width:64px;padding:7px 10px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;font-weight:bold;text-align:right;\">VIAGENS</td>")
-             .append("<td width=\"88\" style=\"width:88px;padding:7px 10px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;font-weight:bold;text-align:right;\">TONELADAS</td>")
-             .append("</tr>");
+             .append("<tr><td colspan=\"").append(colunas).append("\" style=\"background:").append(AZUL).append(";color:#ffffff;padding:9px 12px;font-size:14px;font-weight:bold;\">")
+             .append(esc(t.descricao)).append("</td></tr>");
+            cabecalho(h, cab, intervalos, "EQUIPAMENTO");
             for (Equip e : t.equipamentos) {
-                h.append("<tr><td style=\"").append(celula).append("\"><b>").append(esc(e.codigo)).append("</b> &ndash; ").append(esc(e.descricao)).append("</td>")
-                 .append("<td style=\"").append(num).append("\">").append(inteiro(e.viagens)).append("</td>")
-                 .append("<td style=\"").append(num).append("\">").append(ton(e.toneladas)).append("</td></tr>");
+                h.append("<tr><td style=\"").append(celula).append("padding-left:12px;\"><b>").append(esc(e.codigo)).append("</b> &ndash; ").append(esc(e.descricao)).append("</td>");
+                celulasProducao(h, e, num);
+                h.append("</tr>");
             }
-            String sub = "padding:9px 12px;background:#eef6f1;font-size:14px;font-weight:bold;color:" + AZUL + ";";
-            h.append("<tr><td style=\"").append(sub).append("\">Total ").append(esc(t.descricao)).append("</td>")
-             .append("<td style=\"").append(sub).append("text-align:right;\">").append(inteiro(t.viagens)).append("</td>")
-             .append("<td style=\"").append(sub).append("text-align:right;white-space:nowrap;\">").append(ton(t.toneladas)).append("</td></tr>")
-             .append("</table></td></tr>");
+            String sub = "padding:8px 6px;background:#eef6f1;font-size:12px;font-weight:bold;color:" + AZUL + ";";
+            h.append("<tr><td style=\"").append(sub).append("padding-left:12px;\">Total ").append(esc(t.descricao)).append("</td>");
+            celulasProducao(h, t, sub + "text-align:right;white-space:nowrap;");
+            h.append("</tr></table></td></tr>");
         }
 
-        String total = "padding:12px;background:" + VERDE + ";color:#ffffff;font-size:15px;font-weight:bold;";
+        String total = "padding:10px 6px;background:" + VERDE + ";color:#ffffff;font-size:13px;font-weight:bold;";
         h.append("<tr><td style=\"padding:16px 24px 0;\">")
-         .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-radius:6px;overflow:hidden;border-collapse:separate;\"><tr>")
-         .append("<td style=\"").append(total).append("\">TOTAL GERAL</td>")
-         .append("<td width=\"100\" style=\"width:100px;").append(total).append("text-align:right;white-space:nowrap;\">").append(inteiro(f.viagens)).append(" viagens</td>")
-         .append("<td width=\"110\" style=\"width:110px;").append(total).append("text-align:right;white-space:nowrap;\">").append(ton(f.toneladas)).append(" t</td>")
-         .append("</tr></table></td></tr>")
+         .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;border-collapse:separate;\">");
+        cabecalho(h, cab, intervalos, "&nbsp;");
+        h.append("<tr><td style=\"").append(total).append("padding-left:12px;\">TOTAL GERAL</td>");
+        celulasProducao(h, f, total + "text-align:right;white-space:nowrap;");
+        h.append("</tr></table></td></tr>")
          .append("<tr><td style=\"padding:18px 24px 22px;font-size:12px;color:#9ca3af;line-height:1.5;\">")
+         .append("Semana: de segunda-feira até ").append(esc(dataRef)).append(". Mês e safra: acumulados até ").append(esc(dataRef)).append(".<br>")
          .append("Mensagem automática da Impacto Bioenergia, enviada diariamente com a produção do dia anterior. ")
          .append("Não responda a este e-mail; em caso de divergência, procure o setor agrícola da usina.")
          .append("</td></tr></table></td></tr></table></body></html>");
         return h.toString();
+    }
+
+    /** Duas linhas de cabeçalho: o período (com o intervalo de datas) e, abaixo, Viagens | Toneladas. */
+    private static void cabecalho(StringBuilder h, String cab, String[] intervalos, String primeiraColuna) {
+        String borda = "border-left:1px solid #e5e7eb;";
+        h.append("<tr><td rowspan=\"2\" style=\"").append(cab).append("padding-left:12px;vertical-align:bottom;\">").append(primeiraColuna).append("</td>");
+        for (int i = 0; i < PERIODOS.length; i++) {
+            h.append("<td colspan=\"2\" style=\"").append(cab).append(borda).append("text-align:center;white-space:nowrap;color:").append(AZUL).append(";\">")
+             .append(ROTULOS[i].toUpperCase(new Locale("pt", "BR")))
+             .append("<br><span style=\"font-weight:normal;font-size:10px;color:#6b7280;\">").append(intervalos[i]).append("</span></td>");
+        }
+        h.append("</tr><tr>");
+        for (int i = 0; i < PERIODOS.length; i++) {
+            h.append("<td width=\"48\" style=\"width:48px;").append(cab).append(borda).append("text-align:right;\">VIAG.</td>")
+             .append("<td width=\"76\" style=\"width:76px;").append(cab).append("text-align:right;\">TON.</td>");
+        }
+        h.append("</tr>");
+    }
+
+    private static void linhaTexto(StringBuilder t, String rotulo, Producao p) {
+        t.append("  ").append(rotulo).append("\n");
+        for (int i = 0; i < PERIODOS.length; i++) {
+            t.append("    ").append(ROTULOS[i]).append(": ").append(inteiro(p.viagens[i])).append(" viagens, ")
+             .append(ton(p.toneladas[i])).append(" t\n");
+        }
     }
 
     String texto(Fretista f, String dataRef) {
@@ -407,15 +474,24 @@ final class EmailFretistas {
          .append(" (código ").append(f.codigo).append(")\n");
         for (Tipo tp : f.tipos.values()) {
             t.append("\n").append(tp.descricao).append("\n");
-            for (Equip e : tp.equipamentos) {
-                t.append("  ").append(e.codigo).append(" - ").append(e.descricao).append(": ")
-                 .append(inteiro(e.viagens)).append(" viagens, ").append(ton(e.toneladas)).append(" t\n");
-            }
-            t.append("  Total ").append(tp.descricao).append(": ").append(inteiro(tp.viagens)).append(" viagens, ").append(ton(tp.toneladas)).append(" t\n");
+            for (Equip e : tp.equipamentos) linhaTexto(t, e.codigo + " - " + e.descricao, e);
+            linhaTexto(t, "Total " + tp.descricao, tp);
         }
-        t.append("\nTOTAL GERAL: ").append(inteiro(f.viagens)).append(" viagens, ").append(ton(f.toneladas)).append(" t\n")
-         .append("\nMensagem automática. Não responda a este e-mail.\n");
+        t.append("\n");
+        linhaTexto(t, "TOTAL GERAL", f);
+        t.append("\nSemana: de segunda-feira até ").append(dataRef).append(". Mês e safra: acumulados até ").append(dataRef).append(".\n")
+         .append("Mensagem automática. Não responda a este e-mail.\n");
         return t.toString();
+    }
+
+    private static String producaoJson(Producao p) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < PERIODOS.length; i++) {
+            String sufixo = i == DIA ? "" : ROTULOS[i].replace("ê", "e");
+            sb.append(",\"viagens").append(sufixo).append("\":").append(p.viagens[i])
+              .append(",\"toneladas").append(sufixo).append("\":").append(String.format(Locale.ROOT, "%.3f", p.toneladas[i]));
+        }
+        return sb.toString();
     }
 
     /** Prévia em JSON: o que seria enviado, sem enviar nada. */
@@ -438,22 +514,19 @@ final class EmailFretistas {
               .append(",\"destinatario\":").append(Json.quote(enderecos(destinatarios(f))))
               .append(",\"copia\":").append(Json.quote(enderecos(copias(destinatarios(f)))))
               .append(",\"jaEnviado\":").append(jaEnviado(dataRef, f.codigo))
-              .append(",\"viagens\":").append(f.viagens)
-              .append(",\"toneladas\":").append(String.format(Locale.ROOT, "%.3f", f.toneladas))
+              .append(producaoJson(f))
               .append(",\"tipos\":[");
             boolean pt = true;
             for (Tipo t : f.tipos.values()) {
                 if (!pt) sb.append(',');
                 pt = false;
-                sb.append("{\"tipo\":").append(Json.quote(t.descricao)).append(",\"viagens\":").append(t.viagens)
-                  .append(",\"toneladas\":").append(String.format(Locale.ROOT, "%.3f", t.toneladas)).append(",\"equipamentos\":[");
+                sb.append("{\"tipo\":").append(Json.quote(t.descricao)).append(producaoJson(t)).append(",\"equipamentos\":[");
                 boolean pe = true;
                 for (Equip e : t.equipamentos) {
                     if (!pe) sb.append(',');
                     pe = false;
                     sb.append("{\"codigo\":").append(Json.quote(e.codigo)).append(",\"descricao\":").append(Json.quote(e.descricao))
-                      .append(",\"viagens\":").append(e.viagens)
-                      .append(",\"toneladas\":").append(String.format(Locale.ROOT, "%.3f", e.toneladas)).append('}');
+                      .append(producaoJson(e)).append('}');
                 }
                 sb.append("]}");
             }

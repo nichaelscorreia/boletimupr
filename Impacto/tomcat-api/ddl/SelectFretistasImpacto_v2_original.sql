@@ -1,22 +1,17 @@
--- Produção dos fretistas (transporte e colheita) — base do e-mail diário: viagens e toneladas no dia de
--- referência, na semana (segunda-feira até o dia), no mês (dia 1 até o dia) e na safra (até o dia).
--- Origem: ddl/SelectFretistasImpacto_v2_original.sql. Única diferença: os valores fixos viraram parâmetros —
--- :grupoEmpresa, :empresa, :filial, :safra (configuração da API) e :dataRef (dd/mm/aaaa) no lugar de
--- "trunc(sysdate)-1", para permitir prévia e reenvio de um dia específico. A rotina diária usa o dia anterior.
 select q.cod_fornecedor, 
        material.fn_buscanomefornec(q.cod_fornecedor, trunc(sysdate)) fornecedor,
        nvl(nst_busca_email_pessoa(p.cod_pessoa),'jose.maria@ibea.com.br') email, 
        s.cod_tipoequipamento, s.descricaotipoequipamento, 
        --dia
        m.cod_equipamento, m.descricao equipamento,
-       count(distinct case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensdia, 
-       sum(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidodia,
+       count(distinct case when a.datamovimento = trunc(sysdate)-1 then a.cod_entradacana else null end) viagensdia, 
+       sum(case when a.datamovimento = trunc(sysdate)-1 then b.pesoliquido else 0 end) pesoliquidodia,
        --semana
-       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagenssemana, 
-       sum(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidosemana,
+       count(distinct case when a.datamovimento between trunc(sysdate-1,'iw') and trunc(sysdate)-1 then a.cod_entradacana else null end) viagenssemana, 
+       sum(case when a.datamovimento between trunc(sysdate-1,'iw') and trunc(sysdate)-1 then b.pesoliquido else 0 end) pesoliquidosemana,
        --mes
-       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensmes, 
-       sum(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidomes,
+       count(distinct case when a.datamovimento between trunc(sysdate-1,'mm') and trunc(sysdate)-1 then a.cod_entradacana else null end) viagensmes, 
+       sum(case when a.datamovimento between trunc(sysdate-1,'mm') and trunc(sysdate)-1 then b.pesoliquido else 0 end) pesoliquidomes,
        --safra
        count(distinct a.cod_entradacana) viagenssafra, 
        sum(b.pesoliquido) pesoliquidosafra
@@ -37,10 +32,10 @@ from agricola.entradacana a,
      automotivo.histproprietarioequip q,
      automotivo.historico_tipoequipamento r,
      automotivo.tipoequipamento s
-where n.cod_grupoempresa = :grupoEmpresa 
-and   n.cod_empresa      = :empresa 
-and   n.cod_filial       = :filial 
-and   n.cod_safra        = :safra 
+where n.cod_grupoempresa = 2 
+and   n.cod_empresa      = 1 
+and   n.cod_filial       = 1 
+and   n.cod_safra        = 16 
 and   a.cod_grupoempresa = n.cod_grupoempresa 
 and   a.cod_empresa      = n.cod_empresa 
 and   a.cod_filial       = n.cod_filial 
@@ -91,7 +86,7 @@ and   m.cod_grupoempresa   = r.cod_grupoempresa
 and   m.cod_equipamento    = r.cod_equipamento 
 and   a.datamovimento between r.data_inicio and nvl(r.data_fim, trunc(sysdate))
 and   r.cod_tipoequipamento= s.cod_tipoequipamento 
-and   trunc(a.datamovimento) <= to_date(:dataRef, 'dd/mm/rrrr') 
+and   to_date(trunc(a.datamovimento),'dd/mm/rrrr') <= trunc(sysdate) - 1 
 group by p.cod_pessoa, q.cod_fornecedor, s.cod_tipoequipamento, s.descricaotipoequipamento, m.cod_equipamento, m.descricao
 
 union all
@@ -102,14 +97,14 @@ select q.cod_fornecedor,
        s.cod_tipoequipamento, s.descricaotipoequipamento, 
        m.cod_equipamento, m.descricao equipamento,
        --dia
-       count(distinct case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensdia, 
-       sum(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidodia,
+       count(distinct case when a.datamovimento = trunc(sysdate)-1 then a.cod_entradacana else null end) viagensdia, 
+       sum(case when a.datamovimento = trunc(sysdate)-1 then b.pesoliquido else 0 end) pesoliquidodia,
        --semana
-       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagenssemana, 
-       sum(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidosemana,
+       count(distinct case when a.datamovimento between trunc(sysdate-1,'iw') and trunc(sysdate)-1 then a.cod_entradacana else null end) viagenssemana, 
+       sum(case when a.datamovimento between trunc(sysdate-1,'iw') and trunc(sysdate)-1 then b.pesoliquido else 0 end) pesoliquidosemana,
        --mes
-       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensmes, 
-       sum(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidomes,
+       count(distinct case when a.datamovimento between trunc(sysdate-1,'mm') and trunc(sysdate)-1 then a.cod_entradacana else null end) viagensmes, 
+       sum(case when a.datamovimento between trunc(sysdate-1,'mm') and trunc(sysdate)-1 then b.pesoliquido else 0 end) pesoliquidomes,
        --safra
        count(distinct a.cod_entradacana) viagenssafra, 
        sum(b.pesoliquido) pesoliquidosafra
@@ -131,10 +126,10 @@ from agricola.entradacana a,
      automotivo.histproprietarioequip q,
      automotivo.historico_tipoequipamento r,
      automotivo.tipoequipamento s
-where n.cod_grupoempresa = :grupoEmpresa 
-and   n.cod_empresa      = :empresa 
-and   n.cod_filial       = :filial 
-and   n.cod_safra        = :safra 
+where n.cod_grupoempresa = 2 
+and   n.cod_empresa      = 1 
+and   n.cod_filial       = 1 
+and   n.cod_safra        = 16 
 and   a.cod_grupoempresa = n.cod_grupoempresa 
 and   a.cod_empresa      = n.cod_empresa 
 and   a.cod_filial       = n.cod_filial 
@@ -191,7 +186,7 @@ and   m.cod_grupoempresa   = r.cod_grupoempresa
 and   m.cod_equipamento    = r.cod_equipamento 
 and   a.datamovimento between r.data_inicio and nvl(r.data_fim, trunc(sysdate))
 and   r.cod_tipoequipamento= s.cod_tipoequipamento 
-and   trunc(a.datamovimento) <= to_date(:dataRef, 'dd/mm/rrrr') 
+and   to_date(trunc(a.datamovimento),'dd/mm/rrrr') <= trunc(sysdate) - 1 
 group by p.cod_pessoa, q.cod_fornecedor, s.cod_tipoequipamento, s.descricaotipoequipamento, m.cod_equipamento, m.descricao
 
 order by fornecedor, cod_fornecedor, descricaotipoequipamento, cod_tipoequipamento, cod_equipamento
