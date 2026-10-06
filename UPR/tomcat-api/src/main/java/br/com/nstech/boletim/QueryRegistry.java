@@ -176,6 +176,41 @@ final class QueryRegistry {
         command("assistente.logResposta", "Acrescenta um trecho da resposta ao registro", idLog,
             Spec.base64Text("parte", true, 1000, "trecho da resposta"));
 
+        // --- AGROMAPS: USUÁRIOS E PLANEJAMENTO DE COLHEITA (tabelas NST_AGROMAPS_*, criadas automaticamente) ---
+        Spec login = Spec.text("login", true, 150, "login ou e-mail do usuário, em minúsculas");
+        Spec criadoEm = Spec.pattern("criadoEm", false, "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
+            "data de criação original (só na migração de dados antigos)");
+        Spec uuidUsuario = Spec.pattern("userId", true, "[0-9a-f-]{36}", "identificador do usuário (UUID)");
+        simple("agromaps.usuarioObter", "Usuário do AgroMaps pelo login", false, login);
+        command("agromaps.usuarioCriar", "Cadastra um usuário do AgroMaps (não altera se o login já existir)",
+            login, uuidUsuario,
+            Spec.text("nome", false, 200, "nome de exibição"),
+            Spec.pattern("senhaHash", true, "[0-9a-f]{64}", "SHA-256 (hex) da senha"),
+            criadoEm);
+        Spec idPlanejamento = Spec.text("id", true, 100, "identificador do item (codfaz_codlot_data)");
+        String decimal = "\\d{1,10}(\\.\\d{1,3})?";
+        simple("agromaps.planejamentoListar", "Planejamento de colheita (de uma data ou completo)", false,
+            Spec.date("data", false, "data planejada; omitida = todas"));
+        command("agromaps.planejamentoSalvar", "Grava (ou atualiza) um lote no planejamento de colheita",
+            idPlanejamento,
+            Spec.text("lotName", false, 200, "nome do lote no mapa"),
+            Spec.text("codfaz", false, 20, "código da fazenda"),
+            Spec.text("codlot", false, 20, "código do lote"),
+            Spec.text("nomeFazenda", false, 200, "nome da fazenda"),
+            Spec.date("data", true, "data planejada para a colheita"),
+            Spec.pattern("area", false, decimal, "área em hectares"),
+            Spec.pattern("producao", false, decimal, "produção estimada em toneladas"),
+            Spec.pattern("tch", false, decimal, "TCH previsto"),
+            Spec.integer("turmas", false, 0, 99999, "quantidade de turmas"),
+            Spec.text("variedade", false, 100, "variedade"),
+            Spec.text("dataPlantio", false, 20, "data de plantio"),
+            Spec.text("idadeCana", false, 50, "idade/estágio da cana"),
+            Spec.text("dataUltimaColheita", false, 20, "data da última colheita"),
+            Spec.text("numeroCorte", false, 20, "número do corte"),
+            Spec.pattern("userId", false, "[0-9a-f-]{36}", "usuário que planejou"),
+            criadoEm);
+        command("agromaps.planejamentoExcluir", "Remove um item do planejamento de colheita", idPlanejamento);
+
         // Falha na subida (e não na primeira requisição) se algum SQL com variantes estiver faltando
         for (String f : new String[] {"agricola_resumo", "agricola_detalheFornecedor", "agricola_detalheVariedade",
                                       "frota_detalheCarregamento", "frota_detalheTransporte"}) {

@@ -170,6 +170,10 @@ public class ApiServlet extends HttpServlet {
         try {
             if (q.name.startsWith("config.")) garantirTabela("NST_PAINEL_CONFIG", DDL_CONFIG);
             else if (q.name.startsWith("assistente.")) garantirTabela("NST_ASSISTENTE_LOG", DDL_ASSISTENTE_LOG);
+            else if (q.name.startsWith("agromaps.")) {
+                garantirTabela("NST_AGROMAPS_USUARIO", DDL_AGROMAPS_USUARIO);
+                garantirTabela("NST_AGROMAPS_PLAN_COLHEITA", DDL_AGROMAPS_PLAN_COLHEITA);
+            }
         } catch (Exception e) {
             log("Não foi possível preparar a tabela de apoio de " + q.name, e);
             send(resp, 500, error("Tabela de apoio indisponível: " + e.getMessage()));
@@ -183,12 +187,13 @@ public class ApiServlet extends HttpServlet {
                 ? execute(sql, values, true)
                 : cache.get(q.name + values, q.cacheable, () -> execute(sql, values));
             long ms = System.currentTimeMillis() - start;
-            if (ms > 5000) log("Consulta lenta " + q.name + (q.name.startsWith("assistente.") ? "" : " " + values) + ": " + ms + " ms");
+            if (ms > 5000) log("Consulta lenta " + q.name + (semValoresNoLog(q.name) ? "" : " " + values) + ": " + ms + " ms");
             send(resp, 200, body);
         } catch (Exception e) {
             String ref = UUID.randomUUID().toString().substring(0, 8);
-            // O registro do assistente leva o texto das perguntas/respostas: não vai para o log do Tomcat
-            log("Erro [" + ref + "] na consulta " + q.name + (q.name.startsWith("assistente.") ? "" : " " + values), e);
+            // O registro do assistente leva o texto das perguntas/respostas e os usuários do AgroMaps levam o
+            // hash da senha: esses valores não vão para o log do Tomcat
+            log("Erro [" + ref + "] na consulta " + q.name + (semValoresNoLog(q.name) ? "" : " " + values), e);
             String msg = e instanceof SQLException ? e.getMessage() : "Erro interno";
             send(resp, 500, "{\"error\":" + Json.quote(msg == null ? "Erro interno" : msg.trim())
                 + ",\"ref\":\"" + ref + "\"}");
@@ -214,6 +219,30 @@ public class ApiServlet extends HttpServlet {
             + "constraint nst_assistente_log_pk primary key (id))",
         "create index nst_assistente_log_i1 on nst_assistente_log (datahora)"
     };
+
+    private static final String[] DDL_AGROMAPS_USUARIO = {
+        "create table nst_agromaps_usuario ("
+            + "login varchar2(150) not null, user_id varchar2(36) not null, nome varchar2(200), "
+            + "senha_hash varchar2(64) not null, criado_em date default sysdate not null, "
+            + "constraint nst_agromaps_usuario_pk primary key (login), "
+            + "constraint nst_agromaps_usuario_uk unique (user_id))"
+    };
+
+    private static final String[] DDL_AGROMAPS_PLAN_COLHEITA = {
+        "create table nst_agromaps_plan_colheita ("
+            + "id varchar2(100) not null, lot_name varchar2(200), codfaz varchar2(20), codlot varchar2(20), "
+            + "nome_fazenda varchar2(200), data_planejamento date not null, area number(12,3), "
+            + "producao_estimada number(14,3), tch_previsto number(10,3), turmas number(5), variedade varchar2(100), "
+            + "data_plantio varchar2(20), idade_cana varchar2(50), data_ultima_colheita varchar2(20), "
+            + "numero_corte varchar2(20), user_id varchar2(36), criado_em date default sysdate not null, "
+            + "atualizado_em date default sysdate not null, "
+            + "constraint nst_agromaps_plan_colheita_pk primary key (id))",
+        "create index nst_agromaps_plan_colheita_i1 on nst_agromaps_plan_colheita (data_planejamento)"
+    };
+
+    private static boolean semValoresNoLog(String consulta) {
+        return consulta.startsWith("assistente.") || consulta.startsWith("agromaps.usuario");
+    }
 
     private synchronized void garantirTabela(String tabela, String[] ddl) throws Exception {
         if (tabelasOk.contains(tabela)) return;

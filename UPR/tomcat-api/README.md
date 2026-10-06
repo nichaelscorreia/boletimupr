@@ -49,6 +49,15 @@ grava no banco: comandos `acesso.*` via `POST /api/q/{comando}`, com os parâmet
 Se trocar `DB_USER` por um usuário somente leitura, conceda a ele `SELECT, INSERT, UPDATE, DELETE`
 nessa tabela e `SELECT` na sequência `NST_DISPOSITIVO_ACESSO_SEQ`.
 
+## AgroMaps (usuários e planejamento de colheita)
+
+O backend do AgroMaps (Flask, no Render) usa esta mesma API para guardar no Oracle os usuários do sistema
+(`NST_AGROMAPS_USUARIO`) e o planejamento de colheita (`NST_AGROMAPS_PLAN_COLHEITA`), com os comandos
+`agromaps.*`. As tabelas são criadas no primeiro uso (script equivalente em
+[`ddl/nst_agromaps.sql`](ddl/nst_agromaps.sql)). No AgroMaps, defina `BOLETIM_API_URL` e `BOLETIM_API_SECRET`
+com os mesmos valores usados pelo Boletim. Da senha só trafega o hash SHA-256, que vai na query string do
+cadastro: sem HTTPS no Tomcat ele passa em claro na rede e pode ficar no log de acesso.
+
 ## Configuração (`boletim-api.xml`)
 
 | Parâmetro | Padrão | Descrição |
