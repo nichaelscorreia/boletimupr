@@ -56,6 +56,8 @@ final class EmailFretistas {
     static class Producao {
         final int[] viagens = new int[PERIODOS.length];
         final double[] toneladas = new double[PERIODOS.length];
+        /** Raio médio por período; null = sem movimento no período. Só existe por equipamento (médias não se somam). */
+        final Double[] raio = new Double[PERIODOS.length];
 
         void somar(Producao o) {
             for (int i = 0; i < PERIODOS.length; i++) {
@@ -164,6 +166,8 @@ final class EmailFretistas {
                         for (int i = 0; i < PERIODOS.length; i++) {
                             e.viagens[i] = rs.getInt("VIAGENS" + PERIODOS[i]);
                             e.toneladas[i] = rs.getDouble("PESOLIQUIDO" + PERIODOS[i]);
+                            double raio = rs.getDouble("RAIOMEDIO" + PERIODOS[i]);
+                            e.raio[i] = rs.wasNull() ? null : Double.valueOf(raio);
                         }
                         t.equipamentos.add(e);
                         t.somar(e);
@@ -377,22 +381,23 @@ final class EmailFretistas {
         for (int i = 0; i < PERIODOS.length; i++) {
             String borda = "border-left:1px solid #e5e7eb;";
             h.append("<td style=\"").append(estilo).append(borda).append("\">").append(inteiro(p.viagens[i])).append("</td>")
-             .append("<td style=\"").append(estilo).append("\">").append(ton(p.toneladas[i])).append("</td>");
+             .append("<td style=\"").append(estilo).append("\">").append(ton(p.toneladas[i])).append("</td>")
+             .append("<td style=\"").append(estilo).append("\">").append(p.raio[i] == null ? "&ndash;" : ton(p.raio[i])).append("</td>");
         }
     }
 
     String html(Fretista f, String dataRef) {
         String[] intervalos = intervalos(dataRef);
-        String celula = "padding:7px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#1f2937;";
+        String celula = "padding:7px 5px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#1f2937;";
         String num = celula + "text-align:right;white-space:nowrap;";
-        String cab = "padding:6px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;font-weight:bold;";
-        int colunas = 1 + 2 * PERIODOS.length;
+        String cab = "padding:6px 5px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;font-weight:bold;";
+        int colunas = 2 + 3 * PERIODOS.length;
         StringBuilder h = new StringBuilder(8192);
         h.append("<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\">")
          .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>")
          .append("<body style=\"margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;\">")
          .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6;\"><tr><td align=\"center\" style=\"padding:20px 10px;\">")
-         .append("<table role=\"presentation\" width=\"860\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:860px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;\">");
+         .append("<table role=\"presentation\" width=\"1000\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:1000px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;\">");
 
         if (modoTeste()) {
             h.append("<tr><td style=\"background:#fef3c7;color:#92400e;padding:10px 24px;font-size:13px;\">")
@@ -409,7 +414,7 @@ final class EmailFretistas {
          .append("<div style=\"font-size:14px;color:#4b5563;margin-top:6px;\">Fretista: <b style=\"color:#111827;\">")
          .append(esc(f.nome)).append("</b> (código ").append(f.codigo).append(")</div>")
          .append("<div style=\"font-size:13px;color:#6b7280;margin-top:4px;\">Transporte e colheita de cana realizados pelos seus equipamentos: ")
-         .append("viagens e toneladas no dia anterior, no dia atual, na semana, no período de fechamento e na safra.</div>")
+         .append("viagens, toneladas e raio médio no dia anterior, no dia atual, na semana, no período de fechamento e na safra.</div>")
          .append("</td></tr>");
 
         for (Tipo t : f.tipos.values()) {
@@ -417,46 +422,53 @@ final class EmailFretistas {
              .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:6px;border-collapse:separate;overflow:hidden;\">")
              .append("<tr><td colspan=\"").append(colunas).append("\" style=\"background:").append(AZUL).append(";color:#ffffff;padding:9px 12px;font-size:14px;font-weight:bold;\">")
              .append(esc(t.descricao)).append("</td></tr>");
-            cabecalho(h, cab, intervalos, "EQUIPAMENTO");
+            cabecalho(h, cab, intervalos, true);
             for (Equip e : t.equipamentos) {
-                h.append("<tr><td style=\"").append(celula).append("padding-left:12px;\"><b>").append(esc(e.codigo)).append("</b> &ndash; ").append(esc(e.descricao)).append("</td>");
+                h.append("<tr><td style=\"").append(celula).append("padding-left:12px;font-weight:bold;white-space:nowrap;\">").append(esc(e.codigo)).append("</td>")
+                 .append("<td style=\"").append(celula).append("\">").append(esc(e.descricao)).append("</td>");
                 celulasProducao(h, e, num);
                 h.append("</tr>");
             }
-            String sub = "padding:8px 6px;background:#eef6f1;font-size:12px;font-weight:bold;color:" + AZUL + ";";
-            h.append("<tr><td style=\"").append(sub).append("padding-left:12px;\">Total ").append(esc(t.descricao)).append("</td>");
+            String sub = "padding:8px 5px;background:#eef6f1;font-size:12px;font-weight:bold;color:" + AZUL + ";";
+            h.append("<tr><td colspan=\"2\" style=\"").append(sub).append("padding-left:12px;\">Total ").append(esc(t.descricao)).append("</td>");
             celulasProducao(h, t, sub + "text-align:right;white-space:nowrap;");
             h.append("</tr></table></td></tr>");
         }
 
-        String total = "padding:10px 6px;background:" + VERDE + ";color:#ffffff;font-size:13px;font-weight:bold;";
+        String total = "padding:10px 5px;background:" + VERDE + ";color:#ffffff;font-size:13px;font-weight:bold;";
         h.append("<tr><td style=\"padding:16px 24px 0;\">")
          .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;border-collapse:separate;\">");
-        cabecalho(h, cab, intervalos, "&nbsp;");
-        h.append("<tr><td style=\"").append(total).append("padding-left:12px;\">TOTAL GERAL</td>");
+        cabecalho(h, cab, intervalos, false);
+        h.append("<tr><td colspan=\"2\" style=\"").append(total).append("padding-left:12px;\">TOTAL GERAL</td>");
         celulasProducao(h, f, total + "text-align:right;white-space:nowrap;");
         h.append("</tr></table></td></tr>")
          .append("<tr><td style=\"padding:18px 24px 22px;font-size:12px;color:#9ca3af;line-height:1.5;\">")
-         .append("Dia atual: ").append(esc(dataRef)).append(". Semana atual: de segunda-feira até o dia atual. Período 20 a 19: fechamento do dia 20 ao dia 19 do mês seguinte, acumulado até o dia atual. Safra: acumulada até o dia atual.<br>")
+         .append("Dia atual: ").append(esc(dataRef)).append(". Semana atual: de segunda-feira até o dia atual. Período 20 a 19: fechamento do dia 20 ao dia 19 do mês seguinte, acumulado até o dia atual. Safra: acumulada até o dia atual. Raio: raio médio das viagens, por equipamento.<br>")
          .append("Mensagem automática da Impacto Bioenergia, enviada diariamente com a produção do dia anterior. ")
          .append("Não responda a este e-mail; em caso de divergência, procure o setor agrícola da usina.")
          .append("</td></tr></table></td></tr></table></body></html>");
         return h.toString();
     }
 
-    /** Duas linhas de cabeçalho: o período (com o intervalo de datas) e, abaixo, Viagens | Toneladas. */
-    private void cabecalho(StringBuilder h, String cab, String[] intervalos, String primeiraColuna) {
+    /** Duas linhas de cabeçalho: o período (com o intervalo de datas) e, abaixo, Viagens | Toneladas | Raio médio. */
+    private void cabecalho(StringBuilder h, String cab, String[] intervalos, boolean equipamento) {
         String borda = "border-left:1px solid #e5e7eb;";
-        h.append("<tr><td rowspan=\"2\" style=\"").append(cab).append("padding-left:12px;vertical-align:bottom;\">").append(primeiraColuna).append("</td>");
+        if (equipamento) {
+            h.append("<tr><td rowspan=\"2\" width=\"48\" style=\"width:48px;").append(cab).append("padding-left:12px;vertical-align:bottom;\">C&Oacute;D.</td>")
+             .append("<td rowspan=\"2\" style=\"").append(cab).append("vertical-align:bottom;\">DESCRI&Ccedil;&Atilde;O</td>");
+        } else {
+            h.append("<tr><td rowspan=\"2\" colspan=\"2\" style=\"").append(cab).append("\">&nbsp;</td>");
+        }
         for (int i = 0; i < PERIODOS.length; i++) {
-            h.append("<td colspan=\"2\" style=\"").append(cab).append(borda).append("text-align:center;white-space:nowrap;color:").append(AZUL).append(";\">")
+            h.append("<td colspan=\"3\" style=\"").append(cab).append(borda).append("text-align:center;white-space:nowrap;color:").append(AZUL).append(";\">")
              .append(esc(rotulos[i].toUpperCase(new Locale("pt", "BR"))))
              .append("<br><span style=\"font-weight:normal;font-size:10px;color:#6b7280;\">").append(intervalos[i]).append("</span></td>");
         }
         h.append("</tr><tr>");
         for (int i = 0; i < PERIODOS.length; i++) {
-            h.append("<td width=\"40\" style=\"width:40px;").append(cab).append(borda).append("text-align:right;\">VIAG.</td>")
-             .append("<td width=\"70\" style=\"width:70px;").append(cab).append("text-align:right;\">TON.</td>");
+            h.append("<td width=\"34\" style=\"width:34px;").append(cab).append(borda).append("text-align:right;\">VIAG.</td>")
+             .append("<td width=\"62\" style=\"width:62px;").append(cab).append("text-align:right;\">TON.</td>")
+             .append("<td width=\"40\" style=\"width:40px;").append(cab).append("text-align:right;\">RAIO</td>");
         }
         h.append("</tr>");
     }
@@ -465,7 +477,7 @@ final class EmailFretistas {
         t.append("  ").append(rotulo).append("\n");
         for (int i = 0; i < PERIODOS.length; i++) {
             t.append("    ").append(rotulos[i]).append(": ").append(inteiro(p.viagens[i])).append(" viagens, ")
-             .append(ton(p.toneladas[i])).append(" t\n");
+             .append(ton(p.toneladas[i])).append(" t").append(p.raio[i] == null ? "" : ", raio médio " + ton(p.raio[i])).append("\n");
         }
     }
 
@@ -495,6 +507,7 @@ final class EmailFretistas {
             String sufixo = CHAVES[i];
             sb.append(",\"viagens").append(sufixo).append("\":").append(p.viagens[i])
               .append(",\"toneladas").append(sufixo).append("\":").append(String.format(Locale.ROOT, "%.3f", p.toneladas[i]));
+            if (p.raio[i] != null) sb.append(",\"raio").append(sufixo).append("\":").append(String.format(Locale.ROOT, "%.2f", p.raio[i]));
         }
         return sb.toString();
     }
