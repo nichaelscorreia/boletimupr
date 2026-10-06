@@ -56,13 +56,23 @@ final class EmailFretistas {
     static class Producao {
         final int[] viagens = new int[PERIODOS.length];
         final double[] toneladas = new double[PERIODOS.length];
-        /** Raio médio por período; null = sem movimento no período. Só existe por equipamento (médias não se somam). */
+        /**
+         * Raio médio (km) por período; null = sem movimento no período. Por equipamento vem do banco; nos totais
+         * é a média dos equipamentos ponderada pelas viagens (não a média das médias).
+         */
         final Double[] raio = new Double[PERIODOS.length];
+        private final double[] raioVezesViagens = new double[PERIODOS.length];
+        private final long[] viagensComRaio = new long[PERIODOS.length];
 
         void somar(Producao o) {
             for (int i = 0; i < PERIODOS.length; i++) {
                 viagens[i] += o.viagens[i];
                 toneladas[i] += o.toneladas[i];
+                if (o.raio[i] != null && o.viagens[i] > 0) {
+                    raioVezesViagens[i] += o.raio[i] * o.viagens[i];
+                    viagensComRaio[i] += o.viagens[i];
+                    raio[i] = raioVezesViagens[i] / viagensComRaio[i];
+                }
             }
         }
     }
@@ -443,7 +453,7 @@ final class EmailFretistas {
         celulasProducao(h, f, total + "text-align:right;white-space:nowrap;");
         h.append("</tr></table></td></tr>")
          .append("<tr><td style=\"padding:18px 24px 22px;font-size:12px;color:#9ca3af;line-height:1.5;\">")
-         .append("Dia atual: ").append(esc(dataRef)).append(". Semana atual: de segunda-feira até o dia atual. Período 20 a 19: fechamento do dia 20 ao dia 19 do mês seguinte, acumulado até o dia atual. Safra: acumulada até o dia atual. Raio: raio médio das viagens, por equipamento.<br>")
+         .append("Dia atual: ").append(esc(dataRef)).append(". Semana atual: de segunda-feira até o dia atual. Período 20 a 19: fechamento do dia 20 ao dia 19 do mês seguinte, acumulado até o dia atual. Safra: acumulada até o dia atual. KM: raio médio das viagens, em km; nos totais, média ponderada pela quantidade de viagens.<br>")
          .append("Mensagem automática da Impacto Bioenergia, enviada diariamente com a produção do dia anterior. ")
          .append("Não responda a este e-mail; em caso de divergência, procure o setor agrícola da usina.")
          .append("</td></tr></table></td></tr></table></body></html>");
@@ -468,7 +478,7 @@ final class EmailFretistas {
         for (int i = 0; i < PERIODOS.length; i++) {
             h.append("<td width=\"34\" style=\"width:34px;").append(cab).append(borda).append("text-align:right;\">VIAG.</td>")
              .append("<td width=\"62\" style=\"width:62px;").append(cab).append("text-align:right;\">TON.</td>")
-             .append("<td width=\"40\" style=\"width:40px;").append(cab).append("text-align:right;\">RAIO</td>");
+             .append("<td width=\"40\" style=\"width:40px;").append(cab).append("text-align:right;\">KM</td>");
         }
         h.append("</tr>");
     }
@@ -477,7 +487,7 @@ final class EmailFretistas {
         t.append("  ").append(rotulo).append("\n");
         for (int i = 0; i < PERIODOS.length; i++) {
             t.append("    ").append(rotulos[i]).append(": ").append(inteiro(p.viagens[i])).append(" viagens, ")
-             .append(ton(p.toneladas[i])).append(" t").append(p.raio[i] == null ? "" : ", raio médio " + ton(p.raio[i])).append("\n");
+             .append(ton(p.toneladas[i])).append(" t").append(p.raio[i] == null ? "" : ", raio médio " + ton(p.raio[i]) + " km").append("\n");
         }
     }
 
