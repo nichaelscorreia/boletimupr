@@ -1,25 +1,38 @@
--- Produção dos fretistas (transporte e colheita) — base do e-mail diário: viagens e toneladas no dia de
--- referência, na semana (segunda-feira até o dia), no mês (dia 1 até o dia) e na safra (até o dia).
--- Origem: ddl/SelectFretistasImpacto_v2_original.sql. Única diferença: os valores fixos viraram parâmetros —
--- :grupoEmpresa, :empresa, :filial, :safra (configuração da API) e :dataRef (dd/mm/aaaa) no lugar de
--- "trunc(sysdate)-1", para permitir prévia e reenvio de um dia específico. A rotina diária usa o dia anterior.
+-- Produção dos fretistas (transporte e colheita) — base do e-mail diário: viagens, toneladas e raio médio no
+-- dia anterior (D-2), no dia atual (D-1), na semana, no período de fechamento (dia 20 ao dia 19) e na safra.
+-- Origem: SQL enviado pela usina (3ª versão). Diferenças em relação ao enviado:
+--   * valores fixos viraram parâmetros: :grupoEmpresa, :empresa, :filial, :safra (configuração da API) e :dataRef
+--     (dd/mm/aaaa) no lugar de "trunc(sysdate)-1", para permitir prévia e reenvio de um dia específico;
+--   * no período de fechamento, toneladas e raio médio usam o mesmo intervalo das viagens (no enviado ainda
+--     estavam do dia 1 até a data) e a 3ª coluna chama-se raiomediomes (estava repetida como pesoliquidomes).
 select q.cod_fornecedor, 
        material.fn_buscanomefornec(q.cod_fornecedor, trunc(sysdate)) fornecedor,
        nvl(nst_busca_email_pessoa(p.cod_pessoa),'jose.maria@ibea.com.br') email, 
        s.cod_tipoequipamento, s.descricaotipoequipamento, 
-       --dia
        m.cod_equipamento, m.descricao equipamento,
-       count(distinct case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensdia, 
-       sum(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidodia,
-       --semana
-       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagenssemana, 
+       --dia anterior (D-2)
+       count(distinct case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') - 1 then a.cod_entradacana else null end) viagensdiaanterior,
+       sum(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') - 1 then b.pesoliquido else 0 end) pesoliquidodiaanterior,
+       round(avg(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') - 1 then g.distancia else null end)) raiomediodiaanterior,
+       --dia atual (D-1 = data de referência)
+       count(distinct case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensdiaatual,
+       sum(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidodiaatual,
+       round(avg(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then g.distancia else null end)) raiomediodiaatual,
+       --semana (segunda-feira até a data de referência)
+       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagenssemana,
        sum(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidosemana,
-       --mes
-       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensmes, 
-       sum(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidomes,
+       round(avg(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then g.distancia else null end)) raiomediosemana,
+       --período de fechamento: do dia 20 ao dia 19 do mês seguinte, até a data de referência
+       count(distinct case when a.datamovimento between case when extract(day from to_date(:dataRef, 'dd/mm/rrrr')) >= 20 then trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') + 19 else add_months(trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm'), -1) + 19 end
+                                    and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensmes,
+       sum(case when a.datamovimento between case when extract(day from to_date(:dataRef, 'dd/mm/rrrr')) >= 20 then trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') + 19 else add_months(trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm'), -1) + 19 end
+                                    and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidomes,
+       round(avg(case when a.datamovimento between case when extract(day from to_date(:dataRef, 'dd/mm/rrrr')) >= 20 then trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') + 19 else add_months(trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm'), -1) + 19 end
+                                    and to_date(:dataRef, 'dd/mm/rrrr') then g.distancia else null end)) raiomediomes,
        --safra
-       count(distinct a.cod_entradacana) viagenssafra, 
-       sum(b.pesoliquido) pesoliquidosafra
+       count(distinct a.cod_entradacana) viagenssafra,
+       sum(b.pesoliquido) pesoliquidosafra,
+       round(avg(g.distancia)) raiomediosafra
 from agricola.entradacana a,  
      agricola.itensentradacana b,  
      agricola.historico_fazenda d, 
@@ -101,18 +114,29 @@ select q.cod_fornecedor,
        nvl(nst_busca_email_pessoa(p.cod_pessoa),'jose.maria@ibea.com.br') email, 
        s.cod_tipoequipamento, s.descricaotipoequipamento, 
        m.cod_equipamento, m.descricao equipamento,
-       --dia
-       count(distinct case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensdia, 
-       sum(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidodia,
-       --semana
-       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagenssemana, 
+       --dia anterior (D-2)
+       count(distinct case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') - 1 then a.cod_entradacana else null end) viagensdiaanterior,
+       sum(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') - 1 then b.pesoliquido else 0 end) pesoliquidodiaanterior,
+       round(avg(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') - 1 then g.distancia else null end)) raiomediodiaanterior,
+       --dia atual (D-1 = data de referência)
+       count(distinct case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensdiaatual,
+       sum(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidodiaatual,
+       round(avg(case when a.datamovimento = to_date(:dataRef, 'dd/mm/rrrr') then g.distancia else null end)) raiomediodiaatual,
+       --semana (segunda-feira até a data de referência)
+       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagenssemana,
        sum(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidosemana,
-       --mes
-       count(distinct case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensmes, 
-       sum(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidomes,
+       round(avg(case when a.datamovimento between trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'iw') and to_date(:dataRef, 'dd/mm/rrrr') then g.distancia else null end)) raiomediosemana,
+       --período de fechamento: do dia 20 ao dia 19 do mês seguinte, até a data de referência
+       count(distinct case when a.datamovimento between case when extract(day from to_date(:dataRef, 'dd/mm/rrrr')) >= 20 then trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') + 19 else add_months(trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm'), -1) + 19 end
+                                    and to_date(:dataRef, 'dd/mm/rrrr') then a.cod_entradacana else null end) viagensmes,
+       sum(case when a.datamovimento between case when extract(day from to_date(:dataRef, 'dd/mm/rrrr')) >= 20 then trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') + 19 else add_months(trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm'), -1) + 19 end
+                                    and to_date(:dataRef, 'dd/mm/rrrr') then b.pesoliquido else 0 end) pesoliquidomes,
+       round(avg(case when a.datamovimento between case when extract(day from to_date(:dataRef, 'dd/mm/rrrr')) >= 20 then trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm') + 19 else add_months(trunc(to_date(:dataRef, 'dd/mm/rrrr'), 'mm'), -1) + 19 end
+                                    and to_date(:dataRef, 'dd/mm/rrrr') then g.distancia else null end)) raiomediomes,
        --safra
-       count(distinct a.cod_entradacana) viagenssafra, 
-       sum(b.pesoliquido) pesoliquidosafra
+       count(distinct a.cod_entradacana) viagenssafra,
+       sum(b.pesoliquido) pesoliquidosafra,
+       round(avg(g.distancia)) raiomediosafra
 from agricola.entradacana a,  
      agricola.itensentradacana b,  
      agricola.itensentradacana_equip c,

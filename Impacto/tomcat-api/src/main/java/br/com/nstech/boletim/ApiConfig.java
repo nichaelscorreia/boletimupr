@@ -40,6 +40,7 @@ final class ApiConfig {
     final String emailCopia;           // endereço(s) em cópia (CC) de todos os e-mails, em teste e em produção
     final boolean emailRegistrar;      // false = não usa NST_EMAIL_ENVIO (sem controle de duplicidade; só para testes)
     final String emailRemetenteNome;
+    final String emailSafraRotulo;     // como a safra aparece no e-mail (ex.: 2026/27)
     final String smtpHost;
     final int smtpPort;
     final String smtpUser;
@@ -75,6 +76,7 @@ final class ApiConfig {
         emailCopia = get(ctx, "EMAIL_COPIA", "");
         emailRegistrar = !"N".equalsIgnoreCase(get(ctx, "EMAIL_REGISTRAR", "S"));
         emailRemetenteNome = get(ctx, "EMAIL_REMETENTE_NOME", "Impacto Bioenergia");
+        emailSafraRotulo = get(ctx, "EMAIL_SAFRA_ROTULO", "2026/27");
         smtpHost = get(ctx, "SMTP_HOST", "smtp-mail.outlook.com");
         smtpPort = getInt(ctx, "SMTP_PORT", 587, 1, 65535);
         smtpUser = get(ctx, "SMTP_USER", "");

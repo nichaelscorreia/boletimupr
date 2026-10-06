@@ -33,7 +33,7 @@ import javax.servlet.ServletContext;
 
 /**
  * E-mail diário dos fretistas: cada fornecedor recebe SOMENTE a sua produção (transporte e colheita), em viagens
- * e toneladas, no dia de referência, na semana, no mês e na safra, com quebra por tipo de equipamento, totais por
+ * e toneladas, no dia anterior, no dia de referência (dia atual), na semana, no período de fechamento (20 a 19) e na safra, com quebra por tipo de equipamento, totais por
  * tipo e total geral. Só recebe quem produziu no dia de referência.
  *
  * Envios ficam registrados em NST_EMAIL_ENVIO: um fretista não recebe duas vezes o mesmo dia (a menos que se
@@ -47,9 +47,10 @@ final class EmailFretistas {
     private static final String VERDE = "#2e9e5b";
 
     /** Períodos exibidos, na ordem das colunas do e-mail. */
-    private static final String[] PERIODOS = {"DIA", "SEMANA", "MES", "SAFRA"};
-    private static final String[] ROTULOS = {"Dia", "Semana", "Mês", "Safra"};
-    private static final int DIA = 0;
+    private static final String[] PERIODOS = {"DIAANTERIOR", "DIAATUAL", "SEMANA", "MES", "SAFRA"};
+    private static final String[] CHAVES = {"DiaAnterior", "", "Semana", "Periodo", "Safra"}; // sufixos no JSON da prévia
+    private static final int DIA = 1; // dia atual = data de referência
+    private final String[] rotulos;
 
     /** Viagens e toneladas em cada período (índices de PERIODOS). */
     static class Producao {
@@ -104,6 +105,7 @@ final class EmailFretistas {
         this.ctx = ctx;
         this.sql = NamedSql.parse(new String(recurso("/sql/email_fretistas.sql"), StandardCharsets.UTF_8));
         this.logo = recurso("/email/LogoImpacto.png");
+        this.rotulos = new String[] {"Dia anterior", "Dia atual", "Semana atual", "Período 20 a 19", "Safra " + cfg.emailSafraRotulo};
     }
 
     boolean smtpConfigurado() {
@@ -360,10 +362,13 @@ final class EmailFretistas {
         java.time.format.DateTimeFormatter curto = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
         java.time.LocalDate d = java.time.LocalDate.parse(dataRef, completo);
         java.time.LocalDate segunda = d.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        // Fechamento: do dia 20 ao dia 19 do mês seguinte, o que contém o dia de referência
+        java.time.LocalDate inicio = (d.getDayOfMonth() >= 20 ? d : d.minusMonths(1)).withDayOfMonth(20);
         return new String[] {
+            curto.format(d.minusDays(1)),
             curto.format(d),
             curto.format(segunda) + " a " + curto.format(d),
-            curto.format(d.withDayOfMonth(1)) + " a " + curto.format(d),
+            curto.format(inicio) + " a " + curto.format(inicio.plusMonths(1).withDayOfMonth(19)),
             "até " + curto.format(d)
         };
     }
@@ -387,7 +392,7 @@ final class EmailFretistas {
          .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>")
          .append("<body style=\"margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;\">")
          .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6;\"><tr><td align=\"center\" style=\"padding:20px 10px;\">")
-         .append("<table role=\"presentation\" width=\"800\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:800px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;\">");
+         .append("<table role=\"presentation\" width=\"860\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:860px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;\">");
 
         if (modoTeste()) {
             h.append("<tr><td style=\"background:#fef3c7;color:#92400e;padding:10px 24px;font-size:13px;\">")
@@ -404,7 +409,7 @@ final class EmailFretistas {
          .append("<div style=\"font-size:14px;color:#4b5563;margin-top:6px;\">Fretista: <b style=\"color:#111827;\">")
          .append(esc(f.nome)).append("</b> (código ").append(f.codigo).append(")</div>")
          .append("<div style=\"font-size:13px;color:#6b7280;margin-top:4px;\">Transporte e colheita de cana realizados pelos seus equipamentos: ")
-         .append("viagens e toneladas no dia, na semana, no mês e na safra.</div>")
+         .append("viagens e toneladas no dia anterior, no dia atual, na semana, no período de fechamento e na safra.</div>")
          .append("</td></tr>");
 
         for (Tipo t : f.tipos.values()) {
@@ -432,7 +437,7 @@ final class EmailFretistas {
         celulasProducao(h, f, total + "text-align:right;white-space:nowrap;");
         h.append("</tr></table></td></tr>")
          .append("<tr><td style=\"padding:18px 24px 22px;font-size:12px;color:#9ca3af;line-height:1.5;\">")
-         .append("Semana: de segunda-feira até ").append(esc(dataRef)).append(". Mês e safra: acumulados até ").append(esc(dataRef)).append(".<br>")
+         .append("Dia atual: ").append(esc(dataRef)).append(". Semana atual: de segunda-feira até o dia atual. Período 20 a 19: fechamento do dia 20 ao dia 19 do mês seguinte, acumulado até o dia atual. Safra: acumulada até o dia atual.<br>")
          .append("Mensagem automática da Impacto Bioenergia, enviada diariamente com a produção do dia anterior. ")
          .append("Não responda a este e-mail; em caso de divergência, procure o setor agrícola da usina.")
          .append("</td></tr></table></td></tr></table></body></html>");
@@ -440,26 +445,26 @@ final class EmailFretistas {
     }
 
     /** Duas linhas de cabeçalho: o período (com o intervalo de datas) e, abaixo, Viagens | Toneladas. */
-    private static void cabecalho(StringBuilder h, String cab, String[] intervalos, String primeiraColuna) {
+    private void cabecalho(StringBuilder h, String cab, String[] intervalos, String primeiraColuna) {
         String borda = "border-left:1px solid #e5e7eb;";
         h.append("<tr><td rowspan=\"2\" style=\"").append(cab).append("padding-left:12px;vertical-align:bottom;\">").append(primeiraColuna).append("</td>");
         for (int i = 0; i < PERIODOS.length; i++) {
             h.append("<td colspan=\"2\" style=\"").append(cab).append(borda).append("text-align:center;white-space:nowrap;color:").append(AZUL).append(";\">")
-             .append(ROTULOS[i].toUpperCase(new Locale("pt", "BR")))
+             .append(esc(rotulos[i].toUpperCase(new Locale("pt", "BR"))))
              .append("<br><span style=\"font-weight:normal;font-size:10px;color:#6b7280;\">").append(intervalos[i]).append("</span></td>");
         }
         h.append("</tr><tr>");
         for (int i = 0; i < PERIODOS.length; i++) {
-            h.append("<td width=\"48\" style=\"width:48px;").append(cab).append(borda).append("text-align:right;\">VIAG.</td>")
-             .append("<td width=\"76\" style=\"width:76px;").append(cab).append("text-align:right;\">TON.</td>");
+            h.append("<td width=\"40\" style=\"width:40px;").append(cab).append(borda).append("text-align:right;\">VIAG.</td>")
+             .append("<td width=\"70\" style=\"width:70px;").append(cab).append("text-align:right;\">TON.</td>");
         }
         h.append("</tr>");
     }
 
-    private static void linhaTexto(StringBuilder t, String rotulo, Producao p) {
+    private void linhaTexto(StringBuilder t, String rotulo, Producao p) {
         t.append("  ").append(rotulo).append("\n");
         for (int i = 0; i < PERIODOS.length; i++) {
-            t.append("    ").append(ROTULOS[i]).append(": ").append(inteiro(p.viagens[i])).append(" viagens, ")
+            t.append("    ").append(rotulos[i]).append(": ").append(inteiro(p.viagens[i])).append(" viagens, ")
              .append(ton(p.toneladas[i])).append(" t\n");
         }
     }
@@ -479,7 +484,7 @@ final class EmailFretistas {
         }
         t.append("\n");
         linhaTexto(t, "TOTAL GERAL", f);
-        t.append("\nSemana: de segunda-feira até ").append(dataRef).append(". Mês e safra: acumulados até ").append(dataRef).append(".\n")
+        t.append("\nDia atual: ").append(dataRef).append(". Semana atual: de segunda-feira até o dia atual. Período 20 a 19 e safra: acumulados até o dia atual.\n")
          .append("Mensagem automática. Não responda a este e-mail.\n");
         return t.toString();
     }
@@ -487,7 +492,7 @@ final class EmailFretistas {
     private static String producaoJson(Producao p) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < PERIODOS.length; i++) {
-            String sufixo = i == DIA ? "" : ROTULOS[i].replace("ê", "e");
+            String sufixo = CHAVES[i];
             sb.append(",\"viagens").append(sufixo).append("\":").append(p.viagens[i])
               .append(",\"toneladas").append(sufixo).append("\":").append(String.format(Locale.ROOT, "%.3f", p.toneladas[i]));
         }
