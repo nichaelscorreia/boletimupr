@@ -83,7 +83,7 @@ const Acesso = {
     clearInterval(this.pollTimer);
     const el = this.overlay();
     const cabecalho = `
-      <img src="LogoNSTECH.png" alt="NSTECH" class="acesso-logo" />
+      <img src="Logo.png" alt="Usina Porto Rico" class="acesso-logo" />
       <h1>Boletim Online de Moagem</h1>`;
 
     if (st.status === 'nao_identificado') {
