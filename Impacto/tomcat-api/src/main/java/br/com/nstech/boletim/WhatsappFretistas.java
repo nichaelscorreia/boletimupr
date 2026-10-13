@@ -661,6 +661,23 @@ final class WhatsappFretistas {
             throw new Invalido("WPP_WEBHOOK_URL / WPP_WEBHOOK_TOKEN não configurados no servidor");
         }
         String url = cfg.wppWebhookUrl.replaceAll("/+$", "") + "/api/whatsapp/webhook?token=" + URLEncoder.encode(cfg.wppWebhookToken, "UTF-8");
+        // A instância só tem UM webhook: nunca sobrescreve o de outro sistema (ex.: um fluxo que já usa este número)
+        String base = cfg.wppWebhookUrl.replaceAll("/+$", "");
+        try {
+            JsonElement atual = JsonParser.parseString(evolution("GET", "/webhook/find/", null));
+            if (atual.isJsonObject()) {
+                JsonObject o = atual.getAsJsonObject();
+                String urlAtual = texto(o, "url");
+                if (booleano(o, "enabled") && !urlAtual.isEmpty() && !urlAtual.startsWith(base)) {
+                    throw new Invalido("A instância " + cfg.evolutionInstancia + " já tem um webhook de outro sistema (" + urlAtual
+                        + "). Não foi alterado: use uma instância própria ou faça esse sistema repassar as mensagens.");
+                }
+            }
+        } catch (Invalido e) {
+            throw e;
+        } catch (Exception e) {
+            throw new Invalido("Não foi possível conferir o webhook atual da instância; nada foi alterado (" + resumo(e) + ")");
+        }
         String corpo = cfg.evolutionVersao == 1
             ? "{\"url\":" + Json.quote(url) + ",\"webhook_by_events\":false,\"webhook_base64\":false,\"events\":[\"MESSAGES_UPSERT\"]}"
             : "{\"webhook\":{\"enabled\":true,\"url\":" + Json.quote(url)
