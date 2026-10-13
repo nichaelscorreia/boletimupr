@@ -10,6 +10,7 @@ const App = {
     if (!(await Acesso.iniciar())) return;
 
     this.setupClock();
+    Whatsapp.iniciar();
     Drawer.init();
     Modal.init();
     TVController.init();

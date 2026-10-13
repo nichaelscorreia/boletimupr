@@ -46,6 +46,15 @@ final class ApiConfig {
     final String smtpUser;
     final String smtpPassword;
 
+    // Relatório dos fretistas pelo WhatsApp (Evolution API)
+    final String evolutionUrl;         // ex.: https://evolution.exemplo.com.br
+    final String evolutionApiKey;
+    final String evolutionInstancia;   // nome da instância conectada ao WhatsApp
+    final int evolutionVersao;         // 2 (padrão) ou 1: muda o formato das chamadas
+    final String wppDestinoTeste;      // preenchido = TODOS os envios vão só para este número (e só ele é atendido)
+    final String wppWebhookUrl;        // endereço público desta API (ex.: http://host:8085/boletim-api), visto pela Evolution
+    final String wppWebhookToken;      // segredo exigido nas chamadas do webhook
+
     /** Problemas de configuração que impedem a API de atender (lista vazia = OK). */
     final List<String> problems = new ArrayList<String>();
 
@@ -81,6 +90,15 @@ final class ApiConfig {
         smtpPort = getInt(ctx, "SMTP_PORT", 587, 1, 65535);
         smtpUser = get(ctx, "SMTP_USER", "");
         smtpPassword = get(ctx, "SMTP_PASSWORD", "");
+
+        evolutionUrl = get(ctx, "EVOLUTION_URL", "");
+        evolutionApiKey = get(ctx, "EVOLUTION_APIKEY", "");
+        evolutionInstancia = get(ctx, "EVOLUTION_INSTANCIA", "");
+        evolutionVersao = getInt(ctx, "EVOLUTION_VERSAO", 2, 1, 2);
+        String teste = get(ctx, "WPP_DESTINO_TESTE", "").replaceAll("\\D", "");
+        wppDestinoTeste = teste.length() == 10 || teste.length() == 11 ? "55" + teste : teste;
+        wppWebhookUrl = get(ctx, "WPP_WEBHOOK_URL", "");
+        wppWebhookToken = get(ctx, "WPP_WEBHOOK_TOKEN", "");
 
         if (dbUser.isEmpty() || dbPassword.isEmpty()) {
             problems.add("DB_USER/DB_PASSWORD não configurados");

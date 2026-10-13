@@ -47,10 +47,10 @@ final class EmailFretistas {
     private static final String VERDE = "#2e9e5b";
 
     /** Períodos exibidos, na ordem das colunas do e-mail. */
-    private static final String[] PERIODOS = {"DIAANTERIOR", "DIAATUAL", "SEMANA", "MES", "SAFRA"};
+    static final String[] PERIODOS = {"DIAANTERIOR", "DIAATUAL", "SEMANA", "MES", "SAFRA"};
     private static final String[] CHAVES = {"DiaAnterior", "", "Semana", "Periodo", "Safra"}; // sufixos no JSON da prévia
-    private static final int DIA = 1; // dia atual = data de referência
-    private final String[] rotulos;
+    static final int DIA = 1; // dia atual = data de referência
+    final String[] rotulos;
 
     /** Viagens e toneladas em cada período (índices de PERIODOS). */
     static class Producao {
@@ -107,15 +107,19 @@ final class EmailFretistas {
     private final ApiConfig cfg;
     private final ConnectionPool pool;
     private final ServletContext ctx;
-    private final NamedSql sql;
-    private final byte[] logo;
+    private final NamedSql sql;            // todos os fornecedores
+    private final NamedSql sqlFornecedor;  // um único fornecedor (:codFornecedor)
+    final byte[] logo;
     private volatile boolean tabelaOk;
 
     EmailFretistas(ApiConfig cfg, ConnectionPool pool, ServletContext ctx) throws IOException {
         this.cfg = cfg;
         this.pool = pool;
         this.ctx = ctx;
-        this.sql = NamedSql.parse(new String(recurso("/sql/email_fretistas.sql"), StandardCharsets.UTF_8));
+        String base = new String(recurso("/sql/email_fretistas.sql"), StandardCharsets.UTF_8);
+        if (!base.contains("{{FILTRO_FORNECEDOR}}")) throw new IOException("email_fretistas.sql sem {{FILTRO_FORNECEDOR}}");
+        this.sql = NamedSql.parse(base.replace("{{FILTRO_FORNECEDOR}}", ""));
+        this.sqlFornecedor = NamedSql.parse(base.replace("{{FILTRO_FORNECEDOR}}", "and   q.cod_fornecedor     = :codFornecedor"));
         this.logo = recurso("/email/LogoImpacto.png");
         this.rotulos = new String[] {"Dia anterior", "Dia atual", "Semana atual", "Período 20 a 19", "Safra " + cfg.emailSafraRotulo};
     }
@@ -135,6 +139,15 @@ final class EmailFretistas {
      * Traz só os fretistas com produção no dia; deles, todos os equipamentos que já produziram na safra.
      */
     List<Fretista> carregar(String dataRef) throws Exception {
+        return carregar(dataRef, null, true);
+    }
+
+    /**
+     * @param codFornecedor   só esse fornecedor (null = todos)
+     * @param soComProducaoNoDia false também devolve quem não produziu no dia de referência (mas produziu na safra)
+     */
+    List<Fretista> carregar(String dataRef, Integer codFornecedor, boolean soComProducaoNoDia) throws Exception {
+        NamedSql sql = codFornecedor == null ? this.sql : this.sqlFornecedor;
         Map<Integer, Fretista> mapa = new LinkedHashMap<Integer, Fretista>();
         Pooled p = pool.borrow();
         boolean broken = false;
@@ -149,6 +162,7 @@ final class EmailFretistas {
                     else if ("empresa".equals(n)) ps.setInt(i + 1, cfg.codEmpresa);
                     else if ("filial".equals(n)) ps.setInt(i + 1, cfg.codFilial);
                     else if ("safra".equals(n)) ps.setInt(i + 1, cfg.safraPadrao);
+                    else if ("codFornecedor".equals(n)) ps.setInt(i + 1, codFornecedor);
                     else throw new IllegalStateException("Parâmetro desconhecido no SQL de fretistas: " + n);
                 }
                 ResultSet rs = ps.executeQuery();
@@ -197,7 +211,7 @@ final class EmailFretistas {
         }
         List<Fretista> lista = new ArrayList<Fretista>();
         for (Fretista f : mapa.values()) {
-            if (f.viagens[DIA] > 0 || f.toneladas[DIA] > 0) lista.add(f);
+            if (!soComProducaoNoDia || f.viagens[DIA] > 0 || f.toneladas[DIA] > 0) lista.add(f);
         }
         return lista;
     }
@@ -360,18 +374,18 @@ final class EmailFretistas {
 
     private static final DecimalFormatSymbols BR = new DecimalFormatSymbols(new Locale("pt", "BR"));
 
-    private static String ton(double v) {
+    static String ton(double v) {
         // Arredondamento convencional (meio para cima) a partir do valor decimal exato vindo do banco
         java.math.BigDecimal d = new java.math.BigDecimal(String.valueOf(v)).setScale(2, java.math.RoundingMode.HALF_UP);
         return new DecimalFormat("#,##0.00", BR).format(d);
     }
 
-    private static String inteiro(int v) {
+    static String inteiro(int v) {
         return new DecimalFormat("#,##0", BR).format(v);
     }
 
     /** Intervalo de cada período até o dia de referência (semana começa na segunda-feira, como no SQL). */
-    private static String[] intervalos(String dataRef) {
+    static String[] intervalos(String dataRef) {
         java.time.format.DateTimeFormatter completo = java.time.format.DateTimeFormatter.ofPattern("dd/MM/uuuu");
         java.time.format.DateTimeFormatter curto = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
         java.time.LocalDate d = java.time.LocalDate.parse(dataRef, completo);
@@ -700,7 +714,7 @@ final class EmailFretistas {
         return cmds;
     }
 
-    private static byte[] recurso(String caminho) throws IOException {
+    static byte[] recurso(String caminho) throws IOException {
         InputStream in = EmailFretistas.class.getResourceAsStream(caminho);
         if (in == null) throw new IOException("Recurso não encontrado no WAR: " + caminho);
         try {

@@ -878,3 +878,29 @@ body.acesso-bloqueado .main-content { visibility: hidden; }
 .acesso-acao.liberar { color: #fff; background: #059669; border-color: #059669; }
 .acesso-acao.bloquear { color: var(--accent-rose); border-color: var(--accent-rose); }
 .acesso-acao.excluir { color: var(--text-muted); }
+
+/* --- Administração do WhatsApp dos fretistas --- */
+.wpp-bloco { border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.9rem 1rem; margin-bottom: 0.9rem; }
+.wpp-titulo { font-weight: 700; color: var(--text-light); margin-bottom: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+.wpp-pilula { font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: var(--radius-full); border: 1px solid; }
+.wpp-pilula.ok { color: var(--accent-emerald); }
+.wpp-pilula.erro { color: var(--accent-rose); }
+.wpp-aviso { font-size: 0.82rem; padding: 0.6rem 0.8rem; border-radius: var(--radius-md); margin-bottom: 0.9rem; border: 1px solid var(--accent-amber); color: var(--accent-amber); }
+.wpp-aviso.ok { border-color: var(--accent-emerald); color: var(--accent-emerald); }
+.wpp-form { display: flex; flex-wrap: wrap; gap: 0.7rem 1rem; align-items: flex-end; }
+.wpp-form label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+.wpp-form label.wpp-check { flex-direction: row; align-items: center; gap: 0.45rem; font-size: 0.85rem; color: var(--text-main); padding-bottom: 0.45rem; }
+.wpp-form input:not([type="checkbox"]) {
+  font: inherit; font-size: 1rem; color: var(--text-light); background: var(--bg-main);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.5rem 0.65rem; outline: none; min-width: 11rem;
+}
+.wpp-form input:focus { border-color: var(--accent-emerald); }
+.wpp-form .acesso-acao { padding: 0.6rem 0.9rem; }
+.wpp-tabela { overflow-x: auto; }
+.wpp-tabela table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.wpp-tabela th { text-align: left; font-size: 0.68rem; text-transform: uppercase; color: var(--text-muted); padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border-subtle); white-space: nowrap; }
+.wpp-tabela td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border-subtle); color: var(--text-main); vertical-align: middle; }
+.wpp-tabela tr.wpp-inativo td { color: var(--text-muted); }
+.wpp-acoes { display: flex; gap: 0.35rem; justify-content: flex-end; flex-wrap: wrap; }
+.wpp-ok { color: var(--accent-emerald) !important; font-weight: 600; }
+.wpp-erro { color: var(--accent-rose) !important; font-weight: 600; cursor: help; }

@@ -28,6 +28,9 @@ import javax.servlet.http.HttpServletResponse;
  *   /api/ping            autenticado, executa SELECT 1 FROM DUAL
  *   /api/email/fretistas/previa?data=&fornecedor=   autenticado, o que seria enviado (sem enviar)
  *   POST /api/email/fretistas/enviar?data=&fornecedor=&reenviar=S   autenticado, dispara o envio agora
+ *   /api/whatsapp/estado | /api/whatsapp/fornecedores          autenticado, tela de administração do WhatsApp
+ *   POST /api/whatsapp/cadastro | excluir | config | enviar | webhook-configurar   autenticado (parâmetros na query string)
+ *   POST /api/whatsapp/webhook?token=   chamado pela Evolution API a cada mensagem recebida (autenticado pelo token)
  *   /api/diag            autenticado, versões (Java/Tomcat/driver/Oracle), erro completo de conexão e
  *                        situação da tabela de dispositivos — para suporte remoto sem acesso ao servidor
  *   /api/queries         autenticado, lista as consultas e parâmetros aceitos
@@ -46,6 +49,11 @@ public class ApiServlet extends HttpServlet {
     private transient Security security;
     private transient ResultCache cache;
     private transient EmailFretistas emailFretistas;
+    private transient WhatsappFretistas whatsapp;
+    private transient java.util.concurrent.ScheduledExecutorService agendadorWpp;
+    private transient java.util.concurrent.ExecutorService atendimentoWpp;
+    private volatile String ultimoEnvioWpp = "";
+    private int tentativasWpp;
     private transient java.util.concurrent.ScheduledExecutorService agendador;
     private volatile String ultimoDiaEmail = "";
     private int tentativasEmail;
@@ -75,6 +83,8 @@ public class ApiServlet extends HttpServlet {
             throw new ServletException(e);
         }
         iniciarAgendadorEmail();
+        whatsapp = new WhatsappFretistas(cfg, pool, getServletContext(), emailFretistas);
+        iniciarWhatsapp();
         log("Boletim API ativa: " + registry.all().size() + " consultas, pool=" + cfg.poolSize
             + ", cache=" + cfg.cacheSeconds + "s, IPs permitidos="
             + (cfg.allowedIps.isEmpty() ? "todos" : "restrito"));
@@ -148,6 +158,8 @@ public class ApiServlet extends HttpServlet {
     @Override
     public void destroy() {
         if (agendador != null) agendador.shutdownNow();
+        if (agendadorWpp != null) agendadorWpp.shutdownNow();
+        if (atendimentoWpp != null) atendimentoWpp.shutdownNow();
         if (pool != null) pool.close();
         // Evita vazamento de memória do driver Oracle em redeploys
         ClassLoader cl = getClass().getClassLoader();
@@ -197,6 +209,10 @@ public class ApiServlet extends HttpServlet {
             send(resp, 429, error("Muitas falhas de autenticação; tente mais tarde"));
             return;
         }
+        if (post && "/whatsapp/webhook".equals(path)) {
+            webhookWhatsapp(req, resp, ip);
+            return;
+        }
         if (!security.verifySignature(req)) {
             security.recordAuthFailure(ip);
             log("Assinatura inválida de " + ip + " em " + req.getRequestURI());
@@ -216,6 +232,8 @@ public class ApiServlet extends HttpServlet {
                 runQuery(req, resp, path.substring(3), true);
             } else if ("/email/fretistas/enviar".equals(path)) {
                 emailFretistas(req, resp, true);
+            } else if (path.startsWith("/whatsapp/")) {
+                whatsappAdmin(req, resp, path.substring(10), true);
             } else {
                 send(resp, 405, error("Método não permitido"));
             }
@@ -225,6 +243,8 @@ public class ApiServlet extends HttpServlet {
             diag(resp);
         } else if ("/email/fretistas/previa".equals(path)) {
             emailFretistas(req, resp, false);
+        } else if (path.startsWith("/whatsapp/")) {
+            whatsappAdmin(req, resp, path.substring(10), false);
         } else if ("/queries".equals(path)) {
             listQueries(resp);
         } else if (path.startsWith("/q/")) {
@@ -421,6 +441,146 @@ public class ApiServlet extends HttpServlet {
             log("E-mail fretistas: erro em " + (enviar ? "envio manual" : "prévia"), e);
             send(resp, 500, error(causas(e)));
         }
+    }
+
+    // ---------------------------------------------------------------- WhatsApp dos fretistas
+
+    /** Envio diário pelo WhatsApp: a cada 2 minutos confere se está ativo e se já passou do horário configurado. */
+    private void iniciarWhatsapp() {
+        if (!whatsapp.evolutionConfigurada()) {
+            log("WhatsApp fretistas: Evolution API não configurada (EVOLUTION_URL/APIKEY/INSTANCIA); envio e atendimento desligados");
+            return;
+        }
+        atendimentoWpp = new java.util.concurrent.ThreadPoolExecutor(1, 2, 60, java.util.concurrent.TimeUnit.SECONDS,
+            new java.util.concurrent.ArrayBlockingQueue<Runnable>(50), new java.util.concurrent.ThreadPoolExecutor.DiscardPolicy());
+        agendadorWpp = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(new java.util.concurrent.ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r, "boletim-whatsapp-fretistas");
+                t.setDaemon(true);
+                return t;
+            }
+        });
+        agendadorWpp.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    verificarEnvioWhatsapp();
+                } catch (Throwable t) {
+                    log("WhatsApp fretistas: erro no agendador", t);
+                }
+            }
+        }, 1, 2, java.util.concurrent.TimeUnit.MINUTES);
+        log("WhatsApp fretistas: ativo na instância " + cfg.evolutionInstancia
+            + (whatsapp.modoTeste() ? " em MODO DE TESTE -> " + cfg.wppDestinoTeste : ""));
+    }
+
+    private void verificarEnvioWhatsapp() throws Exception {
+        WhatsappFretistas.Config c = whatsapp.config();
+        if (!c.ativo) return;
+        java.time.ZonedDateTime agora = java.time.ZonedDateTime.now(java.time.ZoneId.of(cfg.emailFuso));
+        java.time.LocalTime hora = java.time.LocalTime.parse(c.hora);
+        java.time.LocalTime t = agora.toLocalTime();
+        // Marca por dia + horário: se o administrador mudar o horário para mais tarde, roda de novo (quem já recebeu não repete)
+        String marca = agora.toLocalDate() + " " + c.hora;
+        if (marca.equals(ultimoEnvioWpp) || t.isBefore(hora) || java.time.Duration.between(hora, t).toHours() >= 12) return;
+        String ontem = agora.toLocalDate().minusDays(1).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        boolean concluido;
+        try {
+            concluido = whatsapp.enviarAgendado(ontem).falhas == 0;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        } catch (Exception e) {
+            log("WhatsApp fretistas: envio do dia " + ontem + " falhou", e);
+            concluido = false;
+        }
+        if (concluido || ++tentativasWpp >= 4) {
+            ultimoEnvioWpp = marca;
+            tentativasWpp = 0;
+        }
+    }
+
+    /** Mensagem recebida no WhatsApp (chamada feita pela Evolution API). Responde na hora e trata em segundo plano. */
+    private void webhookWhatsapp(HttpServletRequest req, HttpServletResponse resp, String ip) throws IOException {
+        String token = req.getParameter("token");
+        if (token == null) token = req.getHeader("X-Webhook-Token");
+        boolean ok = cfg.wppWebhookToken.length() >= 16 && token != null && java.security.MessageDigest.isEqual(
+            token.getBytes(StandardCharsets.UTF_8), cfg.wppWebhookToken.getBytes(StandardCharsets.UTF_8));
+        if (!ok) {
+            security.recordAuthFailure(ip);
+            send(resp, 401, error("Não autorizado"));
+            return;
+        }
+        if (atendimentoWpp == null) {
+            send(resp, 503, error("WhatsApp não configurado"));
+            return;
+        }
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        java.io.InputStream in = req.getInputStream();
+        byte[] buf = new byte[8192];
+        int n;
+        while ((n = in.read(buf)) > 0) {
+            out.write(buf, 0, n);
+            if (out.size() > 1024 * 1024) {
+                send(resp, 413, error("Corpo grande demais"));
+                return;
+            }
+        }
+        final String corpo = new String(out.toByteArray(), StandardCharsets.UTF_8);
+        atendimentoWpp.execute(new Runnable() {
+            @Override
+            public void run() {
+                whatsapp.receber(corpo);
+            }
+        });
+        send(resp, 200, "{\"success\":true}");
+    }
+
+    /** Tela de administração do WhatsApp (chamadas assinadas vindas do painel). */
+    private void whatsappAdmin(HttpServletRequest req, HttpServletResponse resp, String acao, boolean post) throws IOException {
+        try {
+            if (!post && "estado".equals(acao)) {
+                send(resp, 200, whatsapp.estadoJson());
+            } else if (!post && "fornecedores".equals(acao)) {
+                send(resp, 200, whatsapp.fornecedoresJson());
+            } else if (post && "cadastro".equals(acao)) {
+                String id = req.getParameter("id");
+                String nome = whatsapp.salvar(id == null || id.isEmpty() ? null : inteiro(req, "id"), inteiro(req, "fornecedor"),
+                    req.getParameter("numero"), !"N".equalsIgnoreCase(req.getParameter("ativo")), por(req));
+                send(resp, 200, "{\"success\":true,\"nome\":" + Json.quote(nome) + "}");
+            } else if (post && "excluir".equals(acao)) {
+                whatsapp.excluir(inteiro(req, "id"));
+                send(resp, 200, "{\"success\":true}");
+            } else if (post && "config".equals(acao)) {
+                whatsapp.salvarConfig("S".equalsIgnoreCase(req.getParameter("ativo")), req.getParameter("hora"), por(req));
+                send(resp, 200, "{\"success\":true}");
+            } else if (post && "enviar".equals(acao)) {
+                String data = req.getParameter("data");
+                if (data != null && !data.isEmpty() && !Params.isValidDate(data)) throw new WhatsappFretistas.Invalido("Data inválida (dd/mm/aaaa)");
+                send(resp, 200, whatsapp.enviarManual(inteiro(req, "id"), data));
+            } else if (post && "webhook-configurar".equals(acao)) {
+                send(resp, 200, whatsapp.configurarWebhook());
+            } else {
+                send(resp, 404, error("Endpoint inexistente"));
+            }
+        } catch (WhatsappFretistas.Invalido e) {
+            send(resp, 400, error(e.getMessage()));
+        } catch (Exception e) {
+            log("WhatsApp fretistas: erro em " + acao, e);
+            send(resp, 500, error(causas(e)));
+        }
+    }
+
+    private static int inteiro(HttpServletRequest req, String nome) throws WhatsappFretistas.Invalido {
+        String v = req.getParameter(nome);
+        if (v == null || !v.trim().matches("\\d{1,9}")) throw new WhatsappFretistas.Invalido("Parâmetro '" + nome + "' deve ser inteiro");
+        return Integer.parseInt(v.trim());
+    }
+
+    private static String por(HttpServletRequest req) {
+        String v = req.getParameter("por");
+        return v == null || v.trim().isEmpty() ? "administrador" : v.trim();
     }
 
     /** Situação completa para suporte remoto (nunca devolve usuário/senha do banco). */

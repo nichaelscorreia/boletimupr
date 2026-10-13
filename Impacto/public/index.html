@@ -59,6 +59,13 @@
           <span id="acesso-admin-badge" class="acesso-admin-badge" style="display: none;">0</span>
         </button>
 
+        <!-- Visível só para administradores: cadastro e envio dos relatórios dos fretistas pelo WhatsApp -->
+        <button id="btn-whatsapp-admin" class="btn-icon" title="WhatsApp dos fretistas" onclick="Whatsapp.abrir()" style="display: none;">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </button>
+
         <button id="btn-theme-toggle" class="btn-icon" title="Alternar Tema Claro/Escuro" onclick="App.toggleTheme()">
           <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -198,6 +205,7 @@
   <script src="js/views/frotaView.js"></script>
   <script src="js/views/complementaresView.js"></script>
   <script src="js/acesso.js"></script>
+  <script src="js/whatsapp.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

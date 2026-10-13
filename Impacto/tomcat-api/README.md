@@ -91,3 +91,22 @@ tipo e total geral. SQL em `src/main/resources/sql/email_fretistas.sql`; layout 
   `EMAIL_REMETENTE_NOME`, `COD_GRUPOEMPRESA`, `COD_EMPRESA`, `COD_FILIAL` (a safra é `SAFRA_PADRAO`).
 - **Endpoints assinados**: `GET /api/email/fretistas/previa?data=dd/mm/aaaa[&fornecedor=cod]` (mostra o que seria enviado)
   e `POST /api/email/fretistas/enviar?data=dd/mm/aaaa[&fornecedor=cod][&reenviar=S]` (envia agora).
+
+## Relatório dos fretistas pelo WhatsApp (Impacto)
+
+Mesmo relatório do e-mail, em **PDF**, enviado pela [Evolution API](https://doc.evolution-api.com). Código em
+`WhatsappFretistas.java` (cadastro, envio, atendimento) e `PdfFretista.java` (layout).
+
+- **Cadastro**: o administrador vincula um número de WhatsApp a um código de fornecedor na tela "WhatsApp dos
+  fretistas" do painel (ícone de balão, só para administradores). Fica em `NST_WPP_FRETISTA`. Um número só recebe,
+  e só consegue pedir, o relatório do fornecedor a que está vinculado (`q.cod_fornecedor = :codFornecedor` nos dois
+  SELECTs de `email_fretistas.sql`).
+- **Envio diário**: ligado/desligado e com horário definidos na mesma tela (`NST_WPP_CONFIG`). Vai para os cadastros
+  ativos que produziram no dia anterior; `NST_WPP_ENVIO` registra tudo e evita duplicidade.
+- **Pedido pelo WhatsApp**: a Evolution chama `POST /api/whatsapp/webhook?token=...` a cada mensagem recebida.
+  Número cadastrado que envia `1` (ou "relatório", ou uma data como `05/10`) recebe o PDF; qualquer outra mensagem
+  recebe as instruções. Números não cadastrados, grupos e status são ignorados, sem resposta.
+- **Modo de teste**: com `WPP_DESTINO_TESTE` preenchido, todos os envios vão só para esse número e só ele é atendido.
+- **Configuração** (`boletim-api.xml`): `EVOLUTION_URL`, `EVOLUTION_APIKEY`, `EVOLUTION_INSTANCIA`, `EVOLUTION_VERSAO`
+  (2 ou 1), `WPP_DESTINO_TESTE`, `WPP_WEBHOOK_URL` (endereço desta API visto pela Evolution) e `WPP_WEBHOOK_TOKEN`.
+- As tabelas são criadas sozinhas no primeiro uso (script em `ddl/nst_wpp.sql`).

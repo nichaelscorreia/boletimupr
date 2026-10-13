@@ -46,6 +46,7 @@ async function apiRequest(method, path, params) {
   if (!res.ok) {
     const err = new Error(`HTTP ${res.status}${body && body.error ? ` - ${body.error}` : ''}`);
     err.status = res.status;
+    err.apiError = body && body.error ? String(body.error) : null;
     throw err;
   }
   return body;
@@ -140,6 +141,7 @@ function isOracleConnected() {
 }
 
 module.exports = {
+  apiRequest,
   initOraclePool,
   executeQuery,
   executeQueryStrict,

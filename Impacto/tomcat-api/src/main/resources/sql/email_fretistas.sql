@@ -5,6 +5,8 @@
 -- Origem: SQL enviado pela usina (4ª versão). Única diferença: os valores fixos viraram parâmetros —
 -- :grupoEmpresa, :empresa, :filial, :safra (configuração da API) e :dataRef (dd/mm/aaaa) no lugar de
 -- "trunc(sysdate)-1", para permitir prévia e reenvio de um dia específico. A rotina diária usa o dia anterior.
+-- {{FILTRO_FORNECEDOR}} (nos dois SELECTs) vira "and q.cod_fornecedor = :codFornecedor" quando o relatório é de um
+-- único fornecedor (envio pelo WhatsApp) e some quando é de todos (e-mail diário).
 select q.cod_fornecedor, 
        material.fn_buscanomefornec(q.cod_fornecedor, trunc(sysdate)) fornecedor,
        nvl(nst_busca_email_pessoa(p.cod_pessoa),'jose.maria@ibea.com.br') email, 
@@ -67,6 +69,7 @@ and   q.cod_equipamento    = m.cod_equipamento
 and   a.datamovimento between q.data_inicial and nvl(q.data_final, trunc(sysdate))
 and   q.cod_fornecedor     = o.cod_fornecedor 
 and   o.cod_pessoa         = p.cod_pessoa 
+{{FILTRO_FORNECEDOR}}
 and   trunc(a.datamovimento) <= to_date(:dataRef, 'dd/mm/rrrr')
 group by p.cod_pessoa, q.cod_fornecedor, m.cod_equipamento, m.descricao
 
@@ -149,6 +152,7 @@ and   q.cod_equipamento    = m.cod_equipamento
 and   a.datamovimento between q.data_inicial and nvl(q.data_final, trunc(sysdate))
 and   q.cod_fornecedor     = o.cod_fornecedor 
 and   o.cod_pessoa         = p.cod_pessoa 
+{{FILTRO_FORNECEDOR}}
 and   trunc(a.datamovimento) <= to_date(:dataRef, 'dd/mm/rrrr')
 group by p.cod_pessoa, q.cod_fornecedor, c.cod_funcao_equip, m.cod_equipamento, m.descricao
 
